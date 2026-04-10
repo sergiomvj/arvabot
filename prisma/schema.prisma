@@ -63,9 +63,9 @@ model agents_cache {
   model           String?
   color           String   @default("#10B981")
   active          Boolean  @default(true)
-  skills          String[]
+  skills          String?
   last_synced_at  DateTime?
-  metadata        Json?
+  metadata        String?
 
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
