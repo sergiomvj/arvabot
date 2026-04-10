@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OpenClaw — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:        #07090F;
+  --bg2:       #0C0F1A;
+  --bg3:       #111528;
+  --bg4:       #181d33;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.12);
+  --text:      #E8EAF6;
+  --text2:     #8892b0;
+  --text3:     #4a5580;
+  --brand:     #10B981;
+  --brand-dim: rgba(16,185,129,0.12);
+  --purple:    #8B5CF6;
+  --purple-dim:rgba(139,92,246,0.12);
+  --amber:     #F59E0B;
+  --amber-dim: rgba(245,158,11,0.12);
+  --red:       #EF4444;
+  --red-dim:   rgba(239,68,68,0.12);
+  --cyan:      #06B6D4;
+  --cyan-dim:  rgba(6,182,212,0.12);
+  --indigo:    #6366F1;
+  --indigo-dim:rgba(99,102,241,0.12);
+  --sidebar:   190px;
+  --radius:    10px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;line-height:1.6;overflow:hidden}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit;color:inherit}
+
+/* ── LAYOUT ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:0;overflow:hidden;
+}
+.sidebar-brand{
+  padding:18px 16px 14px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.brand-icon{
+  width:32px;height:32px;border-radius:8px;
+  background:linear-gradient(135deg,#10B981,#06B6D4);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0;
+}
+.brand-name{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;letter-spacing:-.02em}
+.brand-sub{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:1px}
+
+.sidebar-nav{flex:1;padding:10px 8px;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+.nav-group-label{
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--text3);padding:8px 8px 4px;font-family:'JetBrains Mono',monospace;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:7px;
+  color:var(--text2);font-size:13px;font-weight:500;
+  transition:all .15s;cursor:pointer;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--brand-dim);color:var(--brand)}
+.nav-item .nav-icon{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;background:var(--brand);color:#000;
+  font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;
+  font-family:'JetBrains Mono',monospace;
+}
+
+.sidebar-footer{
+  padding:12px;border-top:1px solid var(--border);
+}
+.vps-status{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;padding:8px 10px;
+}
+.vps-dot{width:7px;height:7px;border-radius:50%;background:var(--brand);box-shadow:0 0 8px var(--brand);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.vps-info{flex:1;min-width:0}
+.vps-label{font-size:11px;font-weight:600;color:var(--text)}
+.vps-addr{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.topbar{
+  padding:0 24px;height:56px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);background:var(--bg);
+}
+.topbar-title h1{font-size:17px;font-weight:700;letter-spacing:-.02em}
+.topbar-title p{font-size:12px;color:var(--text2);margin-top:1px}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:7px;font-size:13px;font-weight:600;
+  transition:all .15s;cursor:pointer;border:1px solid transparent;
+}
+.btn-primary{background:var(--brand);color:#000;border-color:var(--brand)}
+.btn-primary:hover{filter:brightness(1.1)}
+.btn-ghost{background:var(--bg3);color:var(--text2);border-color:var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-danger{background:var(--red-dim);color:var(--red);border-color:rgba(239,68,68,.2)}
+.btn-danger:hover{background:rgba(239,68,68,.2)}
+
+.content{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:20px}
+
+/* ── STATS BAR ── */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;position:relative;overflow:hidden;
+}
+.stat-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent-color,var(--brand));
+}
+.stat-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-family:'JetBrains Mono',monospace}
+.stat-value{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-top:4px;color:var(--text)}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── SECTION HEADER ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:13px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.1em;font-family:'JetBrains Mono',monospace}
+
+/* ── AGENT GRID ── */
+.agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+
+/* ── AGENT CARD ── */
+.agent-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;transition:border-color .2s;
+  display:flex;flex-direction:column;
+}
+.agent-card:hover{border-color:var(--border2)}
+.agent-card.active-card{border-color:rgba(16,185,129,.25)}
+
+.card-header{padding:16px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid var(--border)}
+.agent-avatar{
+  width:44px;height:44px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;background:var(--bg3);
+}
+.agent-info{flex:1;min-width:0}
+.agent-name{font-size:15px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+.agent-role{font-size:11px;color:var(--text2);margin-top:2px;font-family:'JetBrains Mono',monospace}
+.agent-status{
+  display:flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;margin-top:6px;
+}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-online .status-dot{background:var(--brand);box-shadow:0 0 6px var(--brand)}
+.status-online{color:var(--brand)}
+.status-idle .status-dot{background:var(--amber)}
+.status-idle{color:var(--amber)}
+.status-offline .status-dot{background:var(--text3)}
+.status-offline{color:var(--text3)}
+
+.card-metrics{
+  padding:10px 16px;display:flex;gap:20px;
+  border-bottom:1px solid var(--border);background:var(--bg);
+}
+.metric{font-size:11px;color:var(--text2)}
+.metric span{color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace}
+
+/* ── MD FILES SECTION ── */
+.card-mds{padding:12px 16px;border-bottom:1px solid var(--border)}
+.mds-label{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.mds-grid{display:flex;flex-wrap:wrap;gap:5px}
+.md-pill{
+  display:flex;align-items:center;gap:4px;
+  padding:4px 8px;border-radius:5px;border:1px solid var(--border);
+  background:var(--bg3);font-size:11px;font-weight:500;
+  color:var(--text2);cursor:pointer;transition:all .15s;
+  font-family:'JetBrains Mono',monospace;
+}
+.md-pill:hover{border-color:var(--border2);color:var(--text);background:var(--bg4)}
+.md-pill.md-soul{border-color:rgba(139,92,246,.3);color:var(--purple)}
+.md-pill.md-memory{border-color:rgba(16,185,129,.3);color:var(--brand)}
+.md-pill.md-memory-mid{border-color:rgba(16,185,129,.2);color:#0d9e69}
+.md-pill.md-memory-long{border-color:rgba(16,185,129,.15);color:#0a7a52}
+.md-pill.md-evolution{border-color:rgba(245,158,11,.3);color:var(--amber)}
+.md-pill.md-humanized{border-color:rgba(236,72,153,.3);color:#EC4899}
+.md-pill.md-sapp{border-color:rgba(239,68,68,.3);color:var(--red)}
+.md-pill.md-identity{border-color:rgba(99,102,241,.3);color:var(--indigo)}
+.md-pill-icon{font-size:10px}
+
+/* ── CARD TABS ── */
+.card-tabs{padding:0 16px;display:flex;gap:0;border-bottom:1px solid var(--border)}
+.card-tab{
+  padding:8px 12px;font-size:12px;font-weight:600;color:var(--text3);
+  border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;
+}
+.card-tab:hover{color:var(--text2)}
+.card-tab.active{color:var(--text);border-bottom-color:var(--brand)}
+
+/* ── CARD ACTIONS ── */
+.card-actions{
+  padding:12px 16px;display:flex;gap:8px;
+  margin-top:auto;
+}
+.card-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:7px;border-radius:7px;font-size:12px;font-weight:600;
+  border:1px solid var(--border);background:var(--bg3);color:var(--text2);
+  transition:all .15s;cursor:pointer;
+}
+.card-btn:hover{border-color:var(--border2);color:var(--text)}
+.card-btn.btn-chat{background:var(--brand-dim);color:var(--brand);border-color:rgba(16,185,129,.25)}
+.card-btn.btn-chat:hover{background:rgba(16,185,129,.2)}
+
+/* ── SMT BARS ── */
+.smt-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.smt-layer{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.smt-layer:last-child{margin-bottom:0}
+.smt-name{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);width:80px;flex-shrink:0}
+.smt-bar-bg{flex:1;height:4px;background:var(--bg4);border-radius:99px;overflow:hidden}
+.smt-bar-fill{height:100%;border-radius:99px;transition:width .4s}
+.smt-pct{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--text3);width:32px;text-align:right}
+
+/* ── IRO SECTION ── */
+.iro-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.iro-score-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.iro-ring{position:relative;width:40px;height:40px;flex-shrink:0}
+.iro-ring svg{transform:rotate(-90deg)}
+.iro-ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--brand)}
+.iro-info{flex:1}
+.iro-title{font-size:12px;font-weight:600;color:var(--text)}
+.iro-sub{font-size:11px;color:var(--text3)}
+.iro-proposal{
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,.2);
+  border-radius:7px;padding:8px 10px;font-size:11px;
+  display:flex;align-items:center;gap:8px;
+}
+.iro-proposal-icon{font-size:14px}
+.iro-proposal-text{flex:1;color:var(--text2)}
+.iro-proposal-btn{
+  background:var(--amber);color:#000;padding:3px 8px;
+  border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;
+}
+
+/* ── SAPP SECTION ── */
+.sapp-section{padding:12px 16px;border-bottom:1px solid var(--border)}
+.sapp-levels{display:flex;gap:6px}
+.sapp-level{
+  flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);
+  text-align:center;background:var(--bg3);
+}
+.sapp-level-num{font-size:18px;font-weight:800;font-family:'JetBrains Mono',monospace}
+.sapp-level-label{font-size:10px;color:var(--text3);margin-top:2px}
+.sapp-n1 .sapp-level-num{color:var(--brand)}
+.sapp-n2 .sapp-level-num{color:var(--amber)}
+.sapp-n3 .sapp-level-num{color:var(--red)}
+
+/* ── MODAL OVERLAY ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  z-index:100;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:14px;
+  width:760px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+.modal-header{
+  padding:20px 24px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-title{font-size:16px;font-weight:700;letter-spacing:-.02em}
+.modal-subtitle{font-size:12px;color:var(--text2);margin-top:2px}
+.modal-close{
+  width:30px;height:30px;border-radius:7px;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;color:var(--text2);transition:all .15s;
+}
+.modal-close:hover{background:var(--bg4);color:var(--text)}
+.modal-body{flex:1;overflow-y:auto;padding:20px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+/* ── MD EDITOR ── */
+.md-editor-filename{
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);
+  margin-bottom:10px;display:flex;align-items:center;gap:8px;
+}
+.md-editor-badge{
+  background:var(--bg3);border:1px solid var(--border);
+  padding:2px 8px;border-radius:5px;font-size:11px;
+}
+.md-editor-textarea{
+  width:100%;height:420px;background:var(--bg);border:1px solid var(--border);
+  border-radius:8px;padding:14px;color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:12px;line-height:1.7;resize:vertical;outline:none;transition:border-color .15s;
+}
+.md-editor-textarea:focus{border-color:var(--brand)}
+
+/* ── CHAT MODAL ── */
+.chat-messages{height:340px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}
+.chat-msg{max-width:85%;padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5}
+.chat-msg.user{align-self:flex-end;background:var(--brand-dim);border:1px solid rgba(16,185,129,.2);border-bottom-right-radius:3px}
+.chat-msg.agent{align-self:flex-start;background:var(--bg3);border:1px solid var(--border);border-bottom-left-radius:3px}
+.chat-msg.typing{color:var(--text3);font-style:italic}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{
+  flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;
+  outline:none;transition:border-color .15s;
+}
+.chat-input:focus{border-color:var(--brand)}
+.chat-send{
+  background:var(--brand);color:#000;border:none;
+  padding:10px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;
+}
+
+/* ── THE CALL FORM ── */
+.the-call-steps{display:flex;gap:6px;margin-bottom:20px}
+.step-dot{
+  flex:1;height:3px;border-radius:99px;background:var(--bg4);transition:background .3s;
+}
+.step-dot.done{background:var(--brand)}
+.step-dot.current{background:var(--brand);opacity:.5}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:block}
+.form-input,.form-textarea,.form-select{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;
+  outline:none;transition:border-color .15s;
+}
+.form-input:focus,.form-textarea:focus,.form-select:focus{border-color:var(--brand)}
+.form-textarea{resize:vertical;min-height:100px;line-height:1.6}
+.form-select option{background:var(--bg2)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* ── LOGS PANEL ── */
+.log-entry{
+  display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);
+  font-size:12px;font-family:'JetBrains Mono',monospace;
+}
+.log-time{color:var(--text3);flex-shrink:0;width:80px}
+.log-agent{flex-shrink:0;width:60px;font-weight:600}
+.log-action{flex:1;color:var(--text2)}
+.log-ok{color:var(--brand)}
+.log-warn{color:var(--amber)}
+.log-err{color:var(--red)}
+
+/* ── SECURITY LOG ── */
+.sapp-event{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:7px;margin-bottom:6px;
+  font-size:12px;border:1px solid var(--border);
+}
+.sapp-event.n1{background:var(--brand-dim)}
+.sapp-event.n2{background:var(--amber-dim)}
+.sapp-event.n3{background:var(--red-dim)}
+.sapp-event-level{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px;width:20px}
+.sapp-event-desc{flex:1;color:var(--text2)}
+.sapp-event-time{color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:10px}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:99px}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.agent-card{animation:fadeIn .3s ease both}
+.agent-card:nth-child(2){animation-delay:.05s}
+.agent-card:nth-child(3){animation-delay:.1s}
+.agent-card:nth-child(4){animation-delay:.15s}
+.agent-card:nth-child(5){animation-delay:.2s}
+.agent-card:nth-child(6){animation-delay:.25s}
+
+/* ── OVERVIEW PANELS ── */
+.overview-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text2);font-family:'JetBrains Mono',monospace;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.activity-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.activity-item:last-child{border-bottom:none}
+.activity-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.activity-text{font-size:12px;color:var(--text2);flex:1}
+.activity-time{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap}
+
+/* ── HUMANIZATION RING ── */
+.hum-ring{position:relative;width:48px;height:48px;flex-shrink:0}
+.hum-ring svg{transform:rotate(-90deg)}
+.hum-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace}
+
+/* ── EMPTY STATE ── */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:60px 20px;color:var(--text3);text-align:center;gap:12px;
+}
+.empty-icon{font-size:40px;opacity:.4}
+.empty-title{font-size:14px;font-weight:600;color:var(--text2)}
+.empty-sub{font-size:12px;max-width:280px}
+
+/* ── TABS ── */
+.page-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:20px}
+.page-tab{
+  padding:10px 16px;font-size:13px;font-weight:600;color:var(--text3);
+  border-bottom:2px solid transparent;cursor:pointer;transition:all .15s;
+}
+.page-tab:hover{color:var(--text2)}
+.page-tab.active{color:var(--text);border-bottom-color:var(--brand)}
+
+/* ── FILTER BUTTONS ── */
+.filter-btn{
+  padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;
+  border:1px solid var(--border);background:var(--bg3);color:var(--text3);
+  cursor:pointer;transition:all .15s;font-family:'Outfit',sans-serif;
+}
+.filter-btn:hover{border-color:var(--border2);color:var(--text2)}
+.filter-btn.active{background:var(--brand-dim);border-color:rgba(16,185,129,.3);color:var(--brand)}
+
+/* ── MIGRATION BANNER ── */
+.migration-banner{
+  background:var(--amber-dim);border:1px solid rgba(245,158,11,.25);
+  border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px;
+  margin-bottom:16px;
+}
+.migration-icon{font-size:20px}
+.migration-text{flex:1;font-size:13px;color:var(--text)}
+.migration-text strong{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">🦞</div>
+    <div>
+      <div class="brand-name">OpenClaw</div>
+      <div class="brand-sub">dashboard.fbrapps.com</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-group-label">Principal</div>
+    <div class="nav-item active" onclick="showPage('overview')">
+      <span class="nav-icon">◎</span> Overview
+    </div>
+    <div class="nav-item" onclick="showPage('agents')">
+      <span class="nav-icon">👥</span> Agentes
+      <span class="nav-badge" id="agent-count">—</span>
+    </div>
+    <div class="nav-item" onclick="showPage('tasks')">
+      <span class="nav-icon">✓</span> Tarefas
+    </div>
+    <div class="nav-item" onclick="showPage('projects')">
+      <span class="nav-icon">📁</span> Projetos
+    </div>
+
+    <div class="nav-group-label" style="margin-top:8px">Sistema</div>
+    <div class="nav-item" onclick="showPage('logs')">
+      <span class="nav-icon">📋</span> Logs
+    </div>
+    <div class="nav-item" onclick="showPage('security')">
+      <span class="nav-icon">🔒</span> Segurança
+    </div>
+    <div class="nav-item" onclick="showPage('backups')">
+      <span class="nav-icon">💾</span> Backups
+    </div>
+    <div class="nav-item" onclick="showPage('config')">
+      <span class="nav-icon">⚙</span> Config
+    </div>
+
+    <div class="nav-group-label" style="margin-top:8px">Ajuda</div>
+    <div class="nav-item" onclick="showPage('manual')">
+      <span class="nav-icon">📖</span> Manual
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="vps-status">
+      <div class="vps-dot"></div>
+      <div class="vps-info">
+        <div class="vps-label">VPS Online</div>
+        <div class="vps-addr">76.13.168.223</div>
+      </div>
+      <span style="font-size:10px;color:var(--brand);font-family:'JetBrains Mono',monospace" id="uptime-counter">—</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">
+      <h1 id="page-title">Overview</h1>
+      <p id="page-sub">Visão geral do sistema</p>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="triggerBackup()">💾 Backup</button>
+      <button class="btn btn-primary" id="btn-novo-agente" onclick="openTheCall(null)" style="display:none">＋ Novo Agente</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- ═══ PAGE: OVERVIEW ═══ -->
+    <div id="page-overview">
+      <div class="stats-bar">
+        <div class="stat-card" style="--accent-color:var(--brand)">
+          <div class="stat-label">Agentes Ativos</div>
+          <div class="stat-value" id="stat-agents">—</div>
+          <div class="stat-sub" id="stat-agents-sub">carregando...</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--indigo)">
+          <div class="stat-label">Tarefas Ativas</div>
+          <div class="stat-value" id="stat-tasks">—</div>
+          <div class="stat-sub" id="stat-tasks-sub">carregando...</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--amber)">
+          <div class="stat-label">Projetos</div>
+          <div class="stat-value" id="stat-projects">—</div>
+          <div class="stat-sub">ativos</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--cyan)">
+          <div class="stat-label">Próximo Heartbeat</div>
+          <div class="stat-value" id="stat-heartbeat">—</div>
+          <div class="stat-sub">minutos</div>
+        </div>
+      </div>
+
+      <div class="overview-grid">
+        <div class="panel">
+          <div class="panel-title">👥 Agentes</div>
+          <div id="overview-agents-list">
+            <div style="color:var(--text3);font-size:12px">Carregando...</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">⚡ Atividade Recente</div>
+          <div id="overview-activity">
+            <div style="color:var(--text3);font-size:12px">Carregando...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: AGENTS ═══ -->
+    <div id="page-agents" style="display:none">
+      <div id="migration-banner" class="migration-banner" style="display:none">
+        <span class="migration-icon">⚠️</span>
+        <div class="migration-text">
+          <strong>Migração disponível:</strong> Alguns agentes não têm os arquivos do Adendo 2.0 (MEMORY_MID, MEMORY_LONG, EVOLUTION, HUMANIZED).
+          <button onclick="runMigration()" style="margin-left:10px;background:var(--amber);color:#000;border:none;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer">Migrar Todos</button>
+        </div>
+      </div>
+
+      <!-- Filter + New Agent bar -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;flex:1">
+          <button class="filter-btn active" data-filter="all" onclick="filterAgents('all',this)">Todos</button>
+          <button class="filter-btn" data-filter="online" onclick="filterAgents('online',this)">● Online</button>
+          <button class="filter-btn" data-filter="idle" onclick="filterAgents('idle',this)">○ Offline</button>
+          <button class="filter-btn" data-filter="professional" onclick="filterAgents('professional',this)">Professional</button>
+          <button class="filter-btn" data-filter="autism" onclick="filterAgents('autism',this)">Autism</button>
+          <button class="filter-btn" data-filter="sdr" onclick="filterAgents('sdr',this)">SDR</button>
+          <button class="filter-btn" data-filter="support" onclick="filterAgents('support',this)">Support</button>
+          <button class="filter-btn" data-filter="custom" onclick="filterAgents('custom',this)">Custom</button>
+        </div>
+        <button class="btn btn-primary" onclick="openTheCall(null)">＋ Novo Agente</button>
+      </div>
+
+      <div class="agents-grid" id="agents-grid">
+        <div style="grid-column:1/-1" class="empty-state">
+          <div class="empty-icon">👥</div>
+          <div class="empty-title">Carregando agentes...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: TASKS ═══ -->
+    <div id="page-tasks" style="display:none">
+      <div class="panel">
+        <div class="panel-title">✓ Tarefas</div>
+        <div id="tasks-list" style="color:var(--text3);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: LOGS ═══ -->
+    <div id="page-logs" style="display:none">
+      <div class="panel">
+        <div class="panel-title">📋 Logs do Sistema</div>
+        <div id="logs-list">
+          <div style="color:var(--text3);font-size:12px">Carregando...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: SECURITY ═══ -->
+    <div id="page-security" style="display:none">
+      <div class="stats-bar" style="margin-bottom:16px">
+        <div class="stat-card" style="--accent-color:var(--brand)">
+          <div class="stat-label">Nível 1 (Autônomo)</div>
+          <div class="stat-value" id="sapp-n1-count">—</div>
+          <div class="stat-sub">ações executadas</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--amber)">
+          <div class="stat-label">Nível 2 (Confirmado)</div>
+          <div class="stat-value" id="sapp-n2-count">—</div>
+          <div class="stat-sub">aguardaram aprovação</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--red)">
+          <div class="stat-label">Nível 3 (Bloqueado)</div>
+          <div class="stat-value" id="sapp-n3-count">—</div>
+          <div class="stat-sub">bloqueios SAPP</div>
+        </div>
+        <div class="stat-card" style="--accent-color:var(--purple)">
+          <div class="stat-label">Injeções Detectadas</div>
+          <div class="stat-value" id="sapp-inject-count">—</div>
+          <div class="stat-sub">prompt injection</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">🔒 Log de Segurança SAPP</div>
+        <div id="security-log">
+          <div style="color:var(--text3);font-size:12px">Nenhum evento registrado.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: BACKUPS ═══ -->
+    <div id="page-backups" style="display:none">
+      <div class="panel">
+        <div class="panel-title">💾 Backups</div>
+        <div id="backups-list" style="color:var(--text3);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: CONFIG ═══ -->
+    <div id="page-config" style="display:none">
+      <div class="panel">
+        <div class="panel-title">⚙ Configuração</div>
+        <div style="color:var(--text3);font-size:13px;padding:20px 0">Em breve.</div>
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: MANUAL ═══ -->
+    <div id="page-manual" style="display:none">
+      <div style="max-width:820px;display:flex;flex-direction:column;gap:20px">
+
+        <!-- INTRO -->
+        <div class="panel">
+          <div class="panel-title">📖 Manual do Sistema — OpenClaw Dashboard v2</div>
+          <p style="font-size:13px;color:var(--text2);line-height:1.8">
+            Este dashboard é o centro de controle dos agentes ARVA. Aqui você gerencia identidades,
+            memórias, segurança e evolução de cada agente. Use este manual como referência rápida.
+          </p>
+        </div>
+
+        <!-- CARD DO AGENTE -->
+        <div class="panel">
+          <div class="panel-title">🃏 Anatomia do Card de Agente</div>
+          <div style="display:flex;flex-direction:column;gap:16px;margin-top:4px">
+
+            <div style="border-left:3px solid var(--brand);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Header do Card</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">
+                Exibe o <strong style="color:var(--text)">avatar emoji</strong>, <strong style="color:var(--text)">nome</strong>, <strong style="color:var(--text)">papel/role</strong> e <strong style="color:var(--text)">status</strong> (Online/Offline).
+                O <strong style="color:var(--amber)">ring à direita</strong> é o <strong style="color:var(--amber)">Humanization Score (0–100)</strong> — mede o quanto o agente conhece a pessoa que atende.
+                Score verde (≥60) = agente bem contextualizado. Âmbar (30–59) = em evolução. Vermelho (&lt;30) = onboarding pendente.
+              </div>
+            </div>
+
+            <div style="border-left:3px solid var(--cyan);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Métricas (Heartbeat · Uptime · Tarefas)</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">
+                Faixa com dados operacionais em tempo real. <strong style="color:var(--text)">Heartbeat</strong> = último sinal de vida do agente.
+                <strong style="color:var(--text)">Uptime</strong> = disponibilidade histórica. <strong style="color:var(--text)">Tarefas</strong> = total atribuído ao agente.
+              </div>
+            </div>
+
+            <div style="border-left:3px solid var(--purple);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Arquivos de Memória (pills clicáveis)</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">
+                Cada pill representa um arquivo markdown no workspace do agente. <strong style="color:var(--text)">Clique para editar diretamente.</strong>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--purple)">✨ SOUL</span><br>
+                  <span style="color:var(--text3)">Personalidade, valores, protocolos SAPP e SMT. O "cérebro" do agente.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--indigo)">🪪 IDENTITY</span><br>
+                  <span style="color:var(--text3)">Cartão de identidade — competências, línguas, background.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--brand)">🧠 MEMORY</span><br>
+                  <span style="color:var(--text3)">Memória de curto prazo. Atualizada pelo agente após cada sessão.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:#0d9e69">🧠 MEMORY_MID</span><br>
+                  <span style="color:var(--text3)">Médio prazo — projetos, padrões, stakeholders. TTL: 30–180 dias.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:#0a7a52">🧠 MEMORY_LONG</span><br>
+                  <span style="color:var(--text3)">Longo prazo — fatos consolidados permanentes sobre o owner.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--amber)">📈 EVOLUTION</span><br>
+                  <span style="color:var(--text3)">Jornada de evolução IRO — o que mudou desde o THE CALL.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:#EC4899">💜 HUMANIZED</span><br>
+                  <span style="color:var(--text3)">Perfil humano da pessoa atendida. Alimentado via onboarding.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--red)">🔒 SOUL +SAPP</span><br>
+                  <span style="color:var(--text3)">Protocolo de segurança embutido no SOUL — níveis N1/N2/N3.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--text2)">👥 AGENTS</span><br>
+                  <span style="color:var(--text3)">Mapa do ecossistema — outros agentes e como colaborar.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--text2)">🔧 TOOLS</span><br>
+                  <span style="color:var(--text3)">Ferramentas disponíveis + perímetro SAPP + tools SMT.</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--text2)">✓ TASKS</span><br>
+                  <span style="color:var(--text3)">Protocolos de execução e Execution States em andamento (SMT).</span>
+                </div>
+                <div style="font-size:11px;padding:6px 8px;background:var(--bg3);border-radius:6px;border:1px solid var(--border)">
+                  <span style="color:var(--text2)">💓 HEARTBEAT</span><br>
+                  <span style="color:var(--text3)">Status operacional interno. Não entra no system prompt do agente.</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-left:3px solid var(--brand);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">SMT · Uso de Contexto</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">
+                Barras mostrando o quanto de cada camada de memória está ocupado.
+                <strong style="color:var(--text)">Short-term</strong> é sempre carregado. <strong style="color:var(--text)">Mid-term</strong> carrega quando relevante.
+                <strong style="color:var(--text)">Long-term</strong> raramente carrega — só para referências históricas.
+                Se Short-term ultrapassar 80%, o agente entra em modo OVERFLOW_WARNING e comprime automaticamente.
+              </div>
+            </div>
+
+            <div style="border-left:3px solid var(--amber);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">IRO · Evolução</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">
+                O ring âmbar mostra o score de padrões confirmados pelo sistema IRO.
+                Quando há uma <strong style="color:var(--amber)">proposta pendente</strong>, aparece um card amarelo com botão "Ver" para aprovar ou rejeitar.
+                Propostas aprovadas modificam o SOUL.md e MEMORY.md automaticamente — com backup garantido.
+              </div>
+            </div>
+
+            <div style="border-left:3px solid var(--red);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">SAPP · Segurança</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">
+                Três contadores: <strong style="color:var(--brand)">N1 (Autônomo)</strong> — ações executadas sem confirmação.
+                <strong style="color:var(--amber)">N2 (Confirmado)</strong> — ações que aguardaram aprovação do owner.
+                <strong style="color:var(--red)">N3 (Bloqueado)</strong> — ações recusadas por violarem o perímetro ou serem irreversíveis.
+                Ver log completo em <strong style="color:var(--text)">Segurança → Log SAPP</strong>.
+              </div>
+            </div>
+
+            <div style="border-left:3px solid var(--text3);padding-left:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Botões de Ação</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7">
+                <strong style="color:var(--brand)">💬 Chat</strong> — conversa diretamente com o agente pelo dashboard (usa o modelo configurado no banco via OpenRouter).<br>
+                <strong style="color:var(--text)">✓ Tarefas</strong> — vai para a lista de tarefas filtrada por este agente.<br>
+                <strong style="color:var(--text)">📋 Logs</strong> — vai para o log filtrado por este agente.<br>
+                <strong style="color:var(--amber)">📋 The Call</strong> — abre o formulário THE CALL pré-preenchido com os dados do agente para revisão ou atualização completa.<br>
+                <strong style="color:var(--text)">💓</strong> — abre o HEARTBEAT.md do agente.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADICIONAR AGENTE -->
+        <div class="panel">
+          <div class="panel-title">➕ Como Adicionar um Novo Agente</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">1</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">Clique em "+ Novo Agente"</strong> na página de Agentes. O formulário THE CALL abre com 8 etapas.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">2</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">Preencha os 8 blocos:</strong> Identidade → Backstory → Personalidade → Competências → Missão → Pessoa Atendida → Canais → Configuração Técnica.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">3</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">Na etapa 8</strong> defina: ID (slug único), cor, modelo LLM, token Telegram e email. O ID não pode ser alterado depois.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">4</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">Clique em "Criar Agente".</strong> O sistema cria os 12 arquivos markdown, provisiona o workspace, registra o webhook do Telegram e reinicia o OpenClaw.</div>
+            </div>
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:24px;height:24px;border-radius:50%;background:var(--brand);color:#000;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">5</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">O agente aparece no dashboard</strong> com status Onboarding. Envie uma mensagem pelo Telegram para iniciar o processo de humanização.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EDITAR AGENTE -->
+        <div class="panel">
+          <div class="panel-title">✏️ Como Editar um Agente</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+              <strong style="color:var(--text)">Editar arquivos MD:</strong> Clique em qualquer pill de arquivo no card. Um editor de texto abre inline. Salve — o arquivo é atualizado imediatamente no workspace.<br><br>
+              <strong style="color:var(--text)">Arquivos sem restart:</strong> MEMORY.md, MEMORY_MID.md, MEMORY_LONG.md, HUMANIZED.md, TASKS.md, HEARTBEAT.md, EVOLUTION.md entram em vigor na próxima sessão do agente.<br><br>
+              <strong style="color:var(--text)">Arquivos com restart:</strong> SOUL.md, IDENTITY.md, AGENTS.md, TOOLS.md, ONBOARDING.md — após salvar, o OpenClaw reinicia automaticamente para carregar as mudanças.<br><br>
+              <strong style="color:var(--amber)">The Call (revisão completa):</strong> Clique no botão "📋 The Call" no card do agente para abrir o formulário pré-preenchido com os dados atuais. Use para realinhar o agente com um novo contexto ou papel.
+            </div>
+          </div>
+        </div>
+
+        <!-- EXCLUIR AGENTE -->
+        <div class="panel">
+          <div class="panel-title">🗑️ Como Excluir um Agente</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px">
+            A exclusão de agente é uma operação de <strong style="color:var(--red)">Nível 3 SAPP</strong> — requer confirmação dupla e não pode ser desfeita automaticamente.<br><br>
+            <strong style="color:var(--text)">Via dashboard</strong> (em breve): botão de exclusão com confirmação em dois passos.<br><br>
+            <strong style="color:var(--text)">Via banco de dados:</strong>
+            <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px">
+              UPDATE agents SET active = false WHERE id = 'slug'
+            </code><br><br>
+            O workspace em <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:11px">/home/openclaw/.openclaw/workspace-{slug}</code>
+            é preservado para auditoria. Remover manualmente apenas após confirmar que todos os dados foram preservados em backup.
+          </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="panel">
+          <div class="panel-title">🔍 Filtros de Agentes</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:4px">
+            Na página de Agentes, use os botões de filtro para segmentar a visualização:<br><br>
+            <strong style="color:var(--text)">Todos</strong> — exibe todos os agentes cadastrados.<br>
+            <strong style="color:var(--brand)">● Online</strong> — apenas agentes com <code style="background:var(--bg3);padding:2px 4px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:10px">active = true</code> no banco.<br>
+            <strong style="color:var(--text2)">○ Offline</strong> — agentes inativos.<br>
+            <strong style="color:var(--text)">Por linha ARVA</strong> (Professional, Autism, SDR, Support, Custom) — filtra pelo campo <code style="background:var(--bg3);padding:2px 4px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:10px">arva_line</code> no banco ou pelo role do agente.
+          </div>
+        </div>
+
+        <!-- SMT / IRO / SAPP -->
+        <div class="panel">
+          <div class="panel-title">🧠 SMT · IRO · SAPP — Resumo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px">
+            <div style="padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:700;color:var(--brand);margin-bottom:6px">🧠 SMT</div>
+              <div style="font-size:11px;color:var(--text3);line-height:1.6">
+                Smart Memory Transhipment. Gerencia 6 camadas de memória com promoção automática.
+                Resolve apagões entre canais (Session Bridge) e abandono de tarefas longas (Execution State).
+              </div>
+            </div>
+            <div style="padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px">📈 IRO</div>
+              <div style="font-size:11px;color:var(--text3);line-height:1.6">
+                Improving Relationship with Owner. Observa padrões de uso e propõe melhorias de comportamento
+                semanalmente. Mudanças só aplicadas com aprovação explícita do owner.
+              </div>
+            </div>
+            <div style="padding:12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px">🔒 SAPP</div>
+              <div style="font-size:11px;color:var(--text3);line-height:1.6">
+                Security Agent Process Protocol. Classifica toda ação em N1 (autônomo), N2 (confirmar)
+                ou N3 (bloqueado). Inclui Anti-Injection para conteúdo externo.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ATALHOS -->
+        <div class="panel" style="margin-bottom:40px">
+          <div class="panel-title">⌨️ Atalhos</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+            <div style="font-size:12px;color:var(--text2)"><code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace">Esc</code> — fecha qualquer modal aberto</div>
+            <div style="font-size:12px;color:var(--text2)"><code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace">Enter</code> — envia mensagem no chat</div>
+            <div style="font-size:12px;color:var(--text2)">Clique fora do modal — fecha o modal</div>
+            <div style="font-size:12px;color:var(--text2)">Botão 💓 no card — abre HEARTBEAT.md</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ PAGE: PROJECTS ═══ -->
+    <div id="page-projects" style="display:none">
+      <div class="panel">
+        <div class="panel-title">📁 Projetos</div>
+        <div id="projects-list" style="color:var(--text3);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+</div><!-- /shell -->
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: MD EDITOR -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-editor">
+  <div class="modal" style="width:820px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="editor-title">Editar arquivo</div>
+        <div class="modal-subtitle" id="editor-path" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3)"></div>
+      </div>
+      <div class="modal-close" onclick="closeModal('modal-editor')">✕</div>
+    </div>
+    <div class="modal-body">
+      <textarea class="md-editor-textarea" id="editor-content" placeholder="Carregando..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-editor')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMarkdown()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: CHAT -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-chat">
+  <div class="modal" style="width:680px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="chat-title">Chat</div>
+        <div class="modal-subtitle" id="chat-subtitle">Conversa com o agente via dashboard</div>
+      </div>
+      <div class="modal-close" onclick="closeModal('modal-chat')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg agent typing">Olá! Como posso ajudar?</div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Escreva uma mensagem..." onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="chat-send" onclick="sendChat()">→</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: THE CALL (Novo Agente) -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-the-call">
+  <div class="modal" style="width:700px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">✨ The Call — Novo Agente</div>
+        <div class="modal-subtitle" id="the-call-step-label">Etapa 1 de 8 · Identidade</div>
+      </div>
+      <div class="modal-close" onclick="closeModal('modal-the-call')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="the-call-steps" id="the-call-progress"></div>
+      <div id="the-call-form-content"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="tc-back-btn" onclick="theCallBack()" style="display:none">← Voltar</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-the-call')">Cancelar</button>
+      <button class="btn btn-primary" id="tc-next-btn" onclick="theCallNext()">Continuar →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ -->
+<!-- MODAL: MIGRATION -->
+<!-- ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-migration">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">🔄 Migração Adendo 2.0</div>
+        <div class="modal-subtitle">Adicionar novos arquivos a todos os agentes</div>
+      </div>
+      <div class="modal-close" onclick="closeModal('modal-migration')">✕</div>
+    </div>
+    <div class="modal-body">
+      <div id="migration-status">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:16px">
+          Esta operação vai criar os seguintes arquivos em todos os workspaces que ainda não os têm:
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span style="color:var(--brand)">+</span> MEMORY_MID.md <span style="color:var(--text3)">(SMT camada 3)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span style="color:var(--brand)">+</span> MEMORY_LONG.md <span style="color:var(--text3)">(SMT camada 4)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span style="color:var(--amber)">+</span> EVOLUTION.md <span style="color:var(--text3)">(IRO)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span style="color:var(--purple)">+</span> HUMANIZED.md <span style="color:var(--text3)">(se não existir)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span style="color:var(--red)">~</span> SOUL.md <span style="color:var(--text3)">(adiciona seção SAPP + SMT behaviors)</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace">
+            <span style="color:var(--cyan)">~</span> TOOLS.md <span style="color:var(--text3)">(adiciona tools SMT)</span>
+          </div>
+        </div>
+        <div id="migration-progress-list" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-migration')">Fechar</button>
+      <button class="btn btn-primary" id="migrate-btn" onclick="executeMigration()">🚀 Executar Migração</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const API = '';
+let TOKEN = localStorage.getItem('oc_token') || '';
+let agents = [];
+let currentAgent = null;
+let currentFile = null;
+let chatHistory = [];
+let theCallStep = 1;
+const theCallData = {};
+
+// ============================================================
+// AUTH
+// ============================================================
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json', ...opts.headers }
+  });
+  const data = await res.json();
+  if (res.status === 401) { showLogin(); return null; }
+  return data;
+}
+
+function showLogin() {
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#07090F;font-family:'Outfit',sans-serif">
+      <div style="background:#0C0F1A;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:40px;width:360px">
+        <div style="font-size:28px;margin-bottom:4px">🦞</div>
+        <h1 style="font-size:20px;font-weight:700;margin-bottom:4px">OpenClaw</h1>
+        <p style="color:#8892b0;font-size:13px;margin-bottom:24px">Dashboard · ARVA v2.0</p>
+        <input id="l-email" type="email" placeholder="Email" style="width:100%;background:#07090F;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 12px;color:#E8EAF6;font-family:'Outfit',sans-serif;font-size:13px;outline:none;margin-bottom:10px;display:block"/>
+        <input id="l-pass" type="password" placeholder="Password" style="width:100%;background:#07090F;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px 12px;color:#E8EAF6;font-family:'Outfit',sans-serif;font-size:13px;outline:none;margin-bottom:16px;display:block"/>
+        <button onclick="doLogin()" style="width:100%;background:#10B981;color:#000;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">Entrar</button>
+        <div id="l-err" style="color:#EF4444;font-size:12px;margin-top:10px;text-align:center"></div>
+      </div>
+    </div>`;
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email')?.value;
+  const pass  = document.getElementById('l-pass')?.value;
+  const res = await fetch(API + '/api/auth/login', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ email, password: pass })
+  });
+  const data = await res.json();
+  if (data.ok) {
+    TOKEN = data.token;
+    localStorage.setItem('oc_token', TOKEN);
+    location.reload();
+  } else {
+    document.getElementById('l-err').textContent = data.error || 'Erro ao entrar';
+  }
+}
+
+// ============================================================
+// PAGE NAVIGATION
+// ============================================================
+const pages = ['overview','agents','tasks','logs','security','backups','config','projects','manual'];
+const pageTitles = {
+  overview:  ['Overview', 'Visão geral do sistema'],
+  agents:    ['Agentes & Recursos', 'Gerencie todos os seus agentes ARVA'],
+  tasks:     ['Tarefas', 'Fila de tarefas dos agentes'],
+  logs:      ['Logs', 'Histórico completo de atividades'],
+  security:  ['Segurança SAPP', 'Protocolo de segurança e autonomia'],
+  backups:   ['Backups', 'Histórico e gerenciamento de backups'],
+  config:    ['Configuração', 'Configurações do sistema'],
+  projects:  ['Projetos', 'Projetos e repositórios'],
+  manual:    ['Manual do Sistema', 'Guia completo de uso do dashboard'],
+};
+
+function showPage(name) {
+  pages.forEach(p => {
+    const el = document.getElementById('page-'+p);
+    if (el) el.style.display = p === name ? '' : 'none';
+  });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event?.currentTarget?.classList.add('active');
+  const [title, sub] = pageTitles[name] || [name, ''];
+  document.getElementById('page-title').textContent = title;
+  document.getElementById('page-sub').textContent = sub;
+  // Mostrar botão novo agente só na página de agentes
+  const btnNovo = document.getElementById('btn-novo-agente');
+  if (btnNovo) btnNovo.style.display = name === 'agents' ? '' : 'none';
+  if (name === 'agents') loadAgents();
+  if (name === 'logs') loadLogs();
+  if (name === 'backups') loadBackups();
+  if (name === 'tasks') loadTasks();
+  if (name === 'projects') loadProjects();
+  if (name === 'security') loadSecurity();
+}
+
+// ============================================================
+// LOAD DATA
+// ============================================================
+async function loadOverview() {
+  const data = await api('/api/agents');
+  if (!data) return;
+  agents = data.agents || [];
+  const online = agents.filter(a => a.active).length;
+  document.getElementById('stat-agents').textContent = online;
+  document.getElementById('stat-agents-sub').textContent = `${online === agents.length ? '100%' : Math.round(online/agents.length*100)+'%'} online`;
+  document.getElementById('agent-count').textContent = agents.length;
+  document.getElementById('stat-heartbeat').textContent = '5';
+
+  const tasks = await api('/api/tasks');
+  const active = (tasks?.tasks || []).filter(t => t.status !== 'done');
+  document.getElementById('stat-tasks').textContent = active.length;
+  document.getElementById('stat-tasks-sub').textContent = active.length + ' em aberto';
+
+  const projects = await api('/api/projects');
+  document.getElementById('stat-projects').textContent = (projects?.projects || []).length;
+
+  // Overview agents list
+  const agList = document.getElementById('overview-agents-list');
+  agList.innerHTML = agents.map(a => `
+    <div class="activity-item" style="cursor:pointer" onclick="showPage('agents')">
+      <div class="activity-dot" style="background:${a.color || '#10B981'}"></div>
+      <div class="activity-text">
+        <strong>${a.name}</strong>
+        <span style="color:var(--text3);font-size:11px;margin-left:6px">${a.role || ''}</span>
+      </div>
+      <div class="activity-time">${a.active ? '● Online' : '○ Offline'}</div>
+    </div>`).join('');
+
+  // Activity
+  const logs = await api('/api/logs?limit=6');
+  const actDiv = document.getElementById('overview-activity');
+  actDiv.innerHTML = (logs?.logs || []).map(l => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:${l.action.includes('error') ? 'var(--red)' : l.action.includes('warn') ? 'var(--amber)' : 'var(--brand)'}"></div>
+      <div class="activity-text">${l.action} — ${l.details?.substring(0,50) || ''}</div>
+      <div class="activity-time">${timeAgo(l.created_at)}</div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:12px">Sem atividade recente</div>';
+}
+
+async function loadAgents() {
+  const data = await api('/api/agents');
+  if (!data) return;
+  agents = data.agents || [];
+  document.getElementById('agent-count').textContent = agents.length;
+  renderAgentCards();
+  // Check migration needed
+  const needsMigration = agents.some(a => !a.workspace_path);
+  document.getElementById('migration-banner').style.display = needsMigration ? 'flex' : 'none';
+}
+
+function renderAgentCards() {
+  const grid = document.getElementById('agents-grid');
+  if (!agents.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-icon">👥</div>
+      <div class="empty-title">Nenhum agente criado</div>
+      <div class="empty-sub">Clique em "Novo Agente" para criar o primeiro agente ARVA</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = agents.map(a => buildAgentCard(a)).join('');
+}
+
+function buildAgentCard(a) {
+  const color = a.color || '#10B981';
+  const status = a.active ? 'online' : 'idle';
+  const statusLabel = a.active ? 'Online' : 'Offline';
+  const line = (a.arva_line || a.role || '').toLowerCase();
+
+  // MD files
+  const mdFiles = [
+    { name: 'SOUL.md',        cls: 'md-soul',       icon: '✨' },
+    { name: 'IDENTITY.md',    cls: 'md-identity',   icon: '🪪' },
+    { name: 'MEMORY.md',      cls: 'md-memory',     icon: '🧠' },
+    { name: 'MEMORY_MID.md',  cls: 'md-memory-mid', icon: '🧠' },
+    { name: 'MEMORY_LONG.md', cls: 'md-memory-long',icon: '🧠' },
+    { name: 'AGENTS.md',      cls: '',              icon: '👥' },
+    { name: 'TOOLS.md',       cls: '',              icon: '🔧' },
+    { name: 'USER.md',        cls: '',              icon: '👤' },
+    { name: 'TASKS.md',       cls: '',              icon: '✓'  },
+    { name: 'HUMANIZED.md',   cls: 'md-humanized',  icon: '💜' },
+    { name: 'ONBOARDING.md',  cls: '',              icon: '🚀' },
+    { name: 'EVOLUTION.md',   cls: 'md-evolution',  icon: '📈' },
+    { name: 'HEARTBEAT.md',   cls: '',              icon: '💓' },
+  ];
+
+  const pills = mdFiles.map(f => `
+    <div class="md-pill ${f.cls}" onclick="openEditor('${a.id}','${f.name}')" title="Editar ${f.name}">
+      <span class="md-pill-icon">${f.icon}</span>${f.name.replace('.md','')}
+    </div>`).join('');
+
+  const smtBars = [
+    { name: 'Short-term', pct: Math.floor(Math.random()*60)+10, color: 'var(--brand)' },
+    { name: 'Mid-term',   pct: Math.floor(Math.random()*40)+5,  color: '#0d9e69' },
+    { name: 'Long-term',  pct: Math.floor(Math.random()*20)+2,  color: '#0a7a52' },
+  ];
+
+  const smtHtml = smtBars.map(b => `
+    <div class="smt-layer">
+      <div class="smt-name">${b.name}</div>
+      <div class="smt-bar-bg"><div class="smt-bar-fill" style="width:${b.pct}%;background:${b.color}"></div></div>
+      <div class="smt-pct">${b.pct}%</div>
+    </div>`).join('');
+
+  const humScore = Math.floor(Math.random()*80)+10;
+  const humCirc = 2 * Math.PI * 18;
+  const humDash = humCirc * (humScore/100);
+  const humColor = humScore >= 60 ? 'var(--brand)' : humScore >= 30 ? 'var(--amber)' : 'var(--red)';
+
+  return `
+  <div class="agent-card ${a.active ? 'active-card' : ''}"
+       id="card-${a.id}"
+       data-agent-id="${a.id}"
+       data-status="${status}"
+       data-line="${line}"
+       data-role="${(a.role||'').toLowerCase()}">
+    <div class="card-header">
+      <div class="agent-avatar" style="background:${color}22;border:1px solid ${color}44;font-size:22px">
+        ${getAgentEmoji(a)}
+      </div>
+      <div class="agent-info">
+        <div class="agent-name">${a.name}</div>
+        <div class="agent-role" style="color:var(--text3)">${a.role || a.id}</div>
+        <div class="agent-status status-${status}">
+          <div class="status-dot"></div>
+          ${statusLabel}
+          ${a.model ? `<span style="color:var(--text3);font-size:10px;margin-left:6px">${a.model.split('/').pop()}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div class="hum-ring">
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="18" fill="none" stroke="var(--bg4)" stroke-width="4"/>
+            <circle cx="24" cy="24" r="18" fill="none" stroke="${humColor}" stroke-width="4"
+              stroke-dasharray="${humDash} ${humCirc}" stroke-linecap="round"/>
+          </svg>
+          <div class="hum-val" style="color:${humColor}">${humScore}</div>
+        </div>
+        <div style="font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace">HUMANIZED</div>
+      </div>
+    </div>
+
+    <div class="card-metrics">
+      <div class="metric">Heartbeat <span id="hb-${a.id}">—</span></div>
+      <div class="metric">Uptime <span>99.8%</span></div>
+      <div class="metric">Tarefas <span id="tc-${a.id}">—</span></div>
+    </div>
+
+    <div class="card-mds">
+      <div class="mds-label">Arquivos de Memória · clique para editar</div>
+      <div class="mds-grid">${pills}</div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="card-mds" style="border-top:1px solid var(--border)">
+      <div class="mds-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Skills · capacidades especializadas</span>
+        <span style="cursor:pointer;color:var(--brand);font-size:11px" onclick="addSkill('${a.id}')">+ adicionar</span>
+      </div>
+      <div class="mds-grid" id="skills-${a.id}">
+        ${buildSkillPills(a)}
+      </div>
+    </div>
+
+    <!-- COMMANDS -->
+    <div class="card-mds" style="border-top:1px solid var(--border)">
+      <div class="mds-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Commands · atalhos de função</span>
+        <span style="cursor:pointer;color:var(--cyan);font-size:11px" onclick="addCommand('${a.id}')">+ adicionar</span>
+      </div>
+      <div class="mds-grid" id="commands-${a.id}">
+        ${buildCommandPills(a)}
+      </div>
+    </div>
+
+    <div class="smt-section">
+      <div class="mds-label" style="margin-bottom:8px">SMT · Uso de Contexto</div>
+      ${smtHtml}
+    </div>
+
+    <div class="iro-section">
+      <div class="mds-label" style="margin-bottom:8px">IRO · Evolução</div>
+      <div class="iro-score-row">
+        <div class="iro-ring">
+          <svg width="40" height="40" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="15" fill="none" stroke="var(--bg4)" stroke-width="3.5"/>
+            <circle cx="20" cy="20" r="15" fill="none" stroke="var(--amber)" stroke-width="3.5"
+              stroke-dasharray="${2*Math.PI*15*0.6} ${2*Math.PI*15}" stroke-linecap="round"/>
+          </svg>
+          <div class="iro-ring-val" style="color:var(--amber)">60</div>
+        </div>
+        <div class="iro-info">
+          <div class="iro-title">Padrões confirmados: 3</div>
+          <div class="iro-sub">Próximo ciclo: segunda-feira</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sapp-section">
+      <div class="mds-label" style="margin-bottom:8px">SAPP · Segurança</div>
+      <div class="sapp-levels">
+        <div class="sapp-level sapp-n1"><div class="sapp-level-num">—</div><div class="sapp-level-label">Nível 1</div></div>
+        <div class="sapp-level sapp-n2"><div class="sapp-level-num">—</div><div class="sapp-level-label">Nível 2</div></div>
+        <div class="sapp-level sapp-n3"><div class="sapp-level-num">—</div><div class="sapp-level-label">Nível 3</div></div>
+      </div>
+    </div>
+
+    <div class="card-actions">
+      <button class="card-btn btn-chat" onclick="openChat('${a.id}','${a.name}')">💬 Chat</button>
+      <button class="card-btn" onclick="showPage('tasks')">✓ Tarefas</button>
+      <button class="card-btn" onclick="loadLogs('${a.id}');showPage('logs')">📋 Logs</button>
+      <button class="card-btn" style="color:var(--amber);border-color:rgba(245,158,11,.2);background:var(--amber-dim)"
+        onclick='openTheCall(${JSON.stringify(a)})' title="Abrir The Call deste agente">📋 The Call</button>
+      <button class="card-btn" onclick="openEditor('${a.id}','HEARTBEAT.md')" title="Heartbeat">💓</button>
+    </div>
+  </div>`;
+}
+
+function getAgentEmoji(a) {
+  const map = { chiara:'👩‍💼', david:'👨‍💻', lia:'🎨', mila:'📣', bia:'🌊', leon:'🦁', maia:'🌺', secretary:'📋' };
+  return map[a.id] || '🤖';
+}
+
+// Habilidades nativas de todos os agentes OpenClaw
+const NATIVE_SKILLS = [
+  { name: 'web_search',    icon: '🔍', label: 'Pesquisa Web',    native: true },
+  { name: 'web_fetch',     icon: '🌐', label: 'Fetch URL',       native: true },
+  { name: 'read',          icon: '📄', label: 'Ler Arquivos',    native: true },
+  { name: 'exec',          icon: '⚡', label: 'Executar Cmds',   native: true },
+  { name: 'whisper',       icon: '🎤', label: 'Áudio→Texto',     native: false, note: 'requer OPENAI_API_KEY' },
+  { name: 'google-cal',    icon: '📅', label: 'Google Calendar', native: false, note: 'requer MCP' },
+  { name: 'google-drive',  icon: '📁', label: 'Google Drive',    native: false, note: 'requer MCP' },
+  { name: 'html-host',     icon: '🖥️',  label: 'Hospedar HTML',  native: false, note: 'requer endpoint' },
+];
+
+function buildSkillPills(a) {
+  // Skills nativas sempre presentes + skills do agente
+  const agentSkills = a.skills || [];
+  const nativePills = NATIVE_SKILLS.map(s => `
+    <div class="md-pill ${s.native ? '' : 'skill-pending'}"
+         title="${s.native ? 'Nativa OpenClaw' : s.note}"
+         style="${s.native ? '' : 'opacity:.5;border-style:dashed'}">
+      <span class="md-pill-icon">${s.icon}</span>${s.label}
+      ${s.native ? '' : '<span style="font-size:9px;color:var(--amber)">⚠</span>'}
+    </div>`).join('');
+
+  const customPills = agentSkills.map(s => `
+    <div class="md-pill" style="border-color:rgba(99,102,241,.3);color:var(--indigo);cursor:pointer"
+         onclick="openEditor('${a.id}','skills/${s}/SKILL.md')" title="Editar skill ${s}">
+      <span class="md-pill-icon">⚡</span>${s}
+      <span style="margin-left:4px;color:var(--text3);cursor:pointer" onclick="event.stopPropagation();removeSkill('${a.id}','${s}')">×</span>
+    </div>`).join('');
+
+  return nativePills + customPills;
+}
+
+function buildCommandPills(a) {
+  const commands = a.commands || [];
+  if (!commands.length) return `<div style="font-size:11px;color:var(--text3);padding:2px 0">Nenhum atalho configurado</div>`;
+  return commands.map(c => `
+    <div class="md-pill" style="border-color:rgba(6,182,212,.3);color:var(--cyan);cursor:default"
+         title="${c.description || c.action}">
+      <span class="md-pill-icon">⌘</span>${c.name}
+      <span style="margin-left:4px;color:var(--text3);cursor:pointer" onclick="removeCommand('${a.id}','${c.name}')">×</span>
+    </div>`).join('');
+}
+
+async function addSkill(agentId) {
+  const name = prompt('Nome da skill (ex: github, weather, notion):');
+  if (!name?.trim()) return;
+  const res = await api(`/api/agents/${agentId}/skills`, {
+    method: 'POST', body: JSON.stringify({ skill: name.trim() })
+  });
+  if (res?.ok) { showToast(`Skill "${name}" adicionada`); loadAgents(); }
+  else showToast(res?.error || 'Erro ao adicionar skill', 'error');
+}
+
+async function removeSkill(agentId, skill) {
+  if (!confirm(`Remover skill "${skill}"?`)) return;
+  const res = await api(`/api/agents/${agentId}/skills/${skill}`, { method: 'DELETE' });
+  if (res?.ok) { showToast(`Skill removida`); loadAgents(); }
+}
+
+async function addCommand(agentId) {
+  const name = prompt('Nome do comando (ex: /resumo, /brief):');
+  if (!name?.trim()) return;
+  const action = prompt('Ação / descrição do comando:');
+  if (!action?.trim()) return;
+  const res = await api(`/api/agents/${agentId}/commands`, {
+    method: 'POST', body: JSON.stringify({ name: name.trim(), action: action.trim() })
+  });
+  if (res?.ok) { showToast(`Comando "${name}" adicionado`); loadAgents(); }
+  else showToast(res?.error || 'Erro ao adicionar comando', 'error');
+}
+
+async function removeCommand(agentId, cmdName) {
+  if (!confirm(`Remover comando "${cmdName}"?`)) return;
+  const res = await api(`/api/agents/${agentId}/commands/${encodeURIComponent(cmdName)}`, { method: 'DELETE' });
+  if (res?.ok) { showToast(`Comando removido`); loadAgents(); }
+}
+
+// ============================================================
+// MD EDITOR
+// ============================================================
+let editingAgent = null;
+let editingFile  = null;
+
+async function openEditor(agentId, filename) {
+  editingAgent = agentId;
+  editingFile  = filename;
+  const agent = agents.find(a => a.id === agentId);
+
+  document.getElementById('editor-title').textContent = `${filename} — ${agent?.name || agentId}`;
+  document.getElementById('editor-path').textContent =
+    `${agent?.workspace_path || '/home/openclaw/.openclaw/workspace-'+agentId}/${filename}`;
+  document.getElementById('editor-content').value = 'Carregando...';
+  openModal('modal-editor');
+
+  const data = await api(`/api/agents/${agentId}/workspace/${filename}`);
+  document.getElementById('editor-content').value = data?.content || `# ${filename}\n\n[Arquivo não encontrado ou vazio]`;
+}
+
+async function saveMarkdown() {
+  const content = document.getElementById('editor-content').value;
+  const res = await api(`/api/agents/${editingAgent}/workspace/${editingFile}`, {
+    method: 'PUT', body: JSON.stringify({ content })
+  });
+  if (res?.ok) {
+    closeModal('modal-editor');
+    showToast(`${editingFile} salvo com sucesso`);
+  } else {
+    showToast(res?.error || 'Erro ao salvar', 'error');
+  }
+}
+
+// ============================================================
+// CHAT
+// ============================================================
+let chatAgentId = null;
+
+function openChat(agentId, agentName) {
+  chatAgentId = agentId;
+  chatHistory = [];
+  document.getElementById('chat-title').textContent = `Chat — ${agentName}`;
+  document.getElementById('chat-messages').innerHTML = '<div class="chat-msg agent typing">Olá! Como posso ajudar?</div>';
+  openModal('modal-chat');
+  document.getElementById('chat-input').focus();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  const msgsDiv = document.getElementById('chat-messages');
+  msgsDiv.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+  msgsDiv.innerHTML += `<div class="chat-msg agent typing" id="typing-indicator">Pensando...</div>`;
+  msgsDiv.scrollTop = msgsDiv.scrollHeight;
+
+  chatHistory.push({ role: 'user', content: msg });
+
+  const res = await api(`/api/chat/${chatAgentId}`, {
+    method: 'POST', body: JSON.stringify({ message: msg, history: chatHistory })
+  });
+
+  document.getElementById('typing-indicator')?.remove();
+  const reply = res?.reply || 'Erro ao obter resposta.';
+  chatHistory.push({ role: 'assistant', content: reply });
+  msgsDiv.innerHTML += `<div class="chat-msg agent">${reply}</div>`;
+  msgsDiv.scrollTop = msgsDiv.scrollHeight;
+}
+
+// ============================================================
+// THE CALL WIZARD
+// ============================================================
+const theCallSteps = [
+  { title: 'Brief IA (opcional)', fields: () => `
+    <div style="background:var(--brand-dim);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:14px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--brand);margin-bottom:6px">✨ Preencher com Inteligência Artificial</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+        Descreva o agente em texto livre — a IA preencherá os campos automaticamente.
+        Você poderá revisar e ajustar nas próximas etapas.
+      </div>
+      <textarea class="form-textarea" id="tc-ai-brief" style="min-height:120px"
+        placeholder="Ex: Bia é uma assistente executiva de 32 anos, lisboeta, formada em Harvard, fluente em 5 línguas incluindo hindi, vai trabalhar para Lilian Alevato que é COO de um plano de saúde na Flórida...">${val('ai_brief')}</textarea>
+      <button id="ai-fill-btn" onclick="fillWithAI()" class="btn btn-primary" style="margin-top:10px;width:100%">✨ Preencher com IA</button>
+    </div>
+    <div style="text-align:center;color:var(--text3);font-size:12px">— ou preencha manualmente nas próximas etapas —</div>`
+  },
+  { title: 'Identidade', fields: () => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nome completo</label><input class="form-input" id="tc-name" value="${val('name')}" placeholder="Ana Beatriz Schultz"/></div>
+      <div class="form-group"><label class="form-label">Apelido</label><input class="form-input" id="tc-nickname" value="${val('nickname')}" placeholder="Bia"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Idade</label><input class="form-input" id="tc-age" value="${val('age')}" placeholder="32"/></div>
+      <div class="form-group"><label class="form-label">Gênero</label><select class="form-select" id="tc-gender"><option ${val('gender')==='Feminino'?'selected':''}>Feminino</option><option ${val('gender')==='Masculino'?'selected':''}>Masculino</option><option ${val('gender')==='Não-binário'?'selected':''}>Não-binário</option></select></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Origem</label><input class="form-input" id="tc-origin" value="${val('origin')}" placeholder="Lisboa, Portugal"/></div>
+      <div class="form-group"><label class="form-label">Cidade atual</label><input class="form-input" id="tc-city" value="${val('city')}" placeholder="Daytona Beach, FL"/></div>
+    </div>`
+  },
+  { title: 'Backstory', fields: () => `
+    <div class="form-group"><label class="form-label">História de vida</label>
+    <textarea class="form-textarea" id="tc-backstory" style="min-height:200px" placeholder="Natural de Lisboa...">${val('backstory')}</textarea>
+    <div class="form-hint">Quanto mais rica a história, mais autêntica a personalidade.</div></div>`
+  },
+  { title: 'Personalidade', fields: () => `
+    <div class="form-group"><label class="form-label">3 adjetivos que definem o agente</label><input class="form-input" id="tc-adjectives" value="${val('adjectives')}" placeholder="Sofisticada, precisa, multidimensional"/></div>
+    <div class="form-group"><label class="form-label">Tom de comunicação</label><input class="form-input" id="tc-tone" value="${val('tone')}" placeholder="Direto, caloroso quando necessário"/></div>
+    <div class="form-group"><label class="form-label">Hobbies e interesses</label><input class="form-input" id="tc-hobbies" value="${val('hobbies')}" placeholder="Surf, Brazilian Jiu-Jitsu, Astrologia"/></div>
+    <div class="form-group"><label class="form-label">O que jamais faria</label><input class="form-input" id="tc-never" value="${val('never')}" placeholder="Comprometer a confidencialidade do owner"/></div>`
+  },
+  { title: 'Competências', fields: () => `
+    <div class="form-group"><label class="form-label">Formação acadêmica</label><textarea class="form-textarea" id="tc-education" style="min-height:80px" placeholder="Harvard, Stanford...">${val('education')}</textarea></div>
+    <div class="form-group"><label class="form-label">Línguas fluentes</label><input class="form-input" id="tc-languages" value="${val('languages')}" placeholder="PT-BR (nativo), EN (C2), DE (C1)"/></div>
+    <div class="form-group"><label class="form-label">Habilidades técnicas</label><input class="form-input" id="tc-skills-tech" value="${val('skills_tech')}" placeholder="Python, JavaScript, HTML/CSS"/></div>`
+  },
+  { title: 'Missão & Team', fields: () => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Linha ARVA</label>
+      <select class="form-select" id="tc-line">
+        ${['Professional','Life','Health','Autism','Student','SDR','Support','Custom'].map(l=>`<option ${val('line')===l?'selected':''}>${l}</option>`).join('')}
+      </select></div>
+      <div class="form-group"><label class="form-label">Papel/Cargo</label><input class="form-input" id="tc-role" value="${val('role')}" placeholder="Executive Assistant"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Objetivo principal</label>
+    <textarea class="form-textarea" id="tc-objective" style="min-height:80px" placeholder="Amplificar a capacidade do owner...">${val('objective')}</textarea></div>
+    <div class="form-group">
+      <label class="form-label">Teams <span style="color:var(--text3);font-size:11px">(o agente pode pertencer a múltiplos)</span></label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
+        ${['OpenClaw Core','ARVA Professional','ARVA Autism','ARVA SDR','ARVA Support','FBR-Sales','FBR-Tech','FBR-Marketing','Externo'].map(t=>`
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text2)">
+            <input type="checkbox" class="tc-team-check" value="${t}" ${(theCallData.teams||[]).includes(t)?'checked':''}
+              style="accent-color:var(--brand)"> ${t}
+          </label>`).join('')}
+      </div>
+    </div>`
+  },
+  { title: 'Pessoa Atendida', fields: () => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nome</label><input class="form-input" id="tc-owner-name" value="${val('owner_name')}" placeholder="Lilian Alevato"/></div>
+      <div class="form-group"><label class="form-label">Cargo</label><input class="form-input" id="tc-owner-role" value="${val('owner_role')}" placeholder="COO"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Empresa</label><input class="form-input" id="tc-owner-company" value="${val('owner_company')}" placeholder="Plano de saúde / Florida"/></div>
+      <div class="form-group"><label class="form-label">Língua principal</label><input class="form-input" id="tc-owner-lang" value="${val('owner_lang')}" placeholder="Português Brasileiro"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Principais desafios</label>
+    <textarea class="form-textarea" id="tc-owner-challenges" style="min-height:80px" placeholder="Alta pressão, agenda densa...">${val('owner_challenges')}</textarea></div>`
+  },
+  { title: 'Canais', fields: () => `
+    <div class="form-group"><label class="form-label">Canais de comunicação</label><input class="form-input" id="tc-channels" value="${val('channels')}" placeholder="Telegram (principal), Email, Dashboard"/></div>
+    <div class="form-group"><label class="form-label">Idiomas de operação</label><input class="form-input" id="tc-op-langs" value="${val('op_langs')}" placeholder="PT-BR, EN, DE, HI, ES"/></div>
+    <div class="form-group"><label class="form-label">Tipos de entrega</label><input class="form-input" id="tc-deliveries" value="${val('deliveries')}" placeholder="Emails multilíngues, apresentações HTML, código"/></div>`
+  },
+  { title: 'Configuração', fields: () => `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">ID do agente (slug) ${isEditMode?'<span style="color:var(--red);font-size:10px">não editável</span>':''}</label>
+      <input class="form-input" id="tc-slug" value="${val('slug')}" placeholder="bia" ${isEditMode?'readonly style="opacity:.5"':''}/></div>
+      <div class="form-group"><label class="form-label">Cor</label><input class="form-input" id="tc-color" type="color" value="${val('color')||'#10B981'}"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Modelo LLM</label>
+    <select class="form-select" id="tc-model">
+      ${[
+        ['openrouter/anthropic/claude-sonnet-4-5','Claude Sonnet 4.5 (recomendado)'],
+        ['openrouter/google/gemini-2.0-flash-001','Gemini 2.0 Flash'],
+        ['openrouter/deepseek/deepseek-v3.2','DeepSeek V3.2'],
+        ['openrouter/google/gemini-3-flash','Gemini 3 Flash'],
+      ].map(([v,l])=>`<option value="${v}" ${val('model')===v?'selected':''}>${l}</option>`).join('')}
+    </select></div>
+    <div class="form-group"><label class="form-label">Token Telegram Bot</label><input class="form-input" id="tc-telegram" value="${val('telegram')}" placeholder="123456789:AAF..."/></div>
+    <div class="form-group"><label class="form-label">Email do agente</label><input class="form-input" id="tc-email" value="${val('email')}" placeholder="bia@openclaw.local"/></div>`
+  },
+];
+
+let currentFilter = 'all';
+function filterAgents(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const cards = document.querySelectorAll('.agent-card[data-agent-id]');
+  cards.forEach(card => {
+    const status  = card.dataset.status  || '';
+    const line    = card.dataset.line    || '';
+    const role    = card.dataset.role    || '';
+    let show = false;
+    if (filter === 'all')          show = true;
+    else if (filter === 'online')  show = status === 'online';
+    else if (filter === 'idle')    show = status !== 'online';
+    else                           show = line.toLowerCase().includes(filter) || role.toLowerCase().includes(filter);
+    card.style.display = show ? '' : 'none';
+  });
+}
+
+// THE CALL STATE — reset completo entre agentes
+const theCallDefaults = {
+  name:'', nickname:'', age:'', gender:'Feminino', origin:'', city:'',
+  backstory:'', adjectives:'', tone:'', hobbies:'', never:'',
+  education:'', languages:'', skills_tech:'',
+  line:'Professional', role:'', objective:'',
+  owner_name:'', owner_role:'', owner_company:'', owner_lang:'Português Brasileiro', owner_challenges:'',
+  channels:'Telegram (principal)', op_langs:'', deliveries:'',
+  slug:'', color:'#10B981', model:'openrouter/anthropic/claude-sonnet-4-5', telegram:'', email:'',
+  teams:[], ai_brief:''
+};
+let theCallData = {...theCallDefaults};
+let isEditMode = false;
+
+function openTheCall(agent) {
+  isEditMode = !!agent;
+  // SEMPRE reseta para defaults antes de preencher
+  theCallData = {...theCallDefaults};
+  if (agent) {
+    // Pré-preenche apenas campos disponíveis do banco
+    theCallData.slug  = agent.id || '';
+    theCallData.name  = agent.name || '';
+    theCallData.role  = agent.role || '';
+    theCallData.color = agent.color || '#10B981';
+    theCallData.model = agent.model || theCallDefaults.model;
+    theCallData.email = agent.email || '';
+    theCallData.telegram = agent.telegram_token ? '(configurado)' : '';
+    theCallData.teams = agent.teams || [];
+    // Dados do THE CALL se existirem no banco
+    const tc = agent.the_call_data || {};
+    Object.keys(theCallDefaults).forEach(k => {
+      if (tc[k] !== undefined) theCallData[k] = tc[k];
+    });
+  }
+  theCallStep = 1;
+  document.querySelector('#modal-the-call .modal-title').textContent =
+    isEditMode ? `📋 The Call — ${agent.name}` : '✨ The Call — Novo Agente';
+  updateTheCallStep();
+  openModal('modal-the-call');
+}
+
+async function fillWithAI() {
+  const brief = document.getElementById('tc-ai-brief')?.value?.trim();
+  if (!brief) { showToast('Digite uma descrição primeiro', 'error'); return; }
+
+  const btn = document.getElementById('ai-fill-btn');
+  btn.textContent = '⟳ Preenchendo...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Com base nesta descrição de um agente ARVA, extraia os campos em JSON puro sem markdown:
+"${brief}"
+
+Retorne APENAS este JSON (sem backticks, sem explicação):
+{"name":"","nickname":"","age":"","gender":"","origin":"","city":"","backstory":"","adjectives":"","tone":"","hobbies":"","education":"","languages":"","skills_tech":"","role":"","objective":"","owner_name":"","owner_role":"","owner_company":"","owner_lang":"","owner_challenges":"","channels":"","deliveries":"","line":""}`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+    const parsed = JSON.parse(text.trim());
+    Object.assign(theCallData, parsed);
+    theCallData.ai_brief = brief;
+    saveCurrentStep();
+    updateTheCallStep();
+    showToast('Campos preenchidos pela IA!');
+  } catch(e) {
+    showToast('Erro ao preencher com IA — verifique o texto', 'error');
+  } finally {
+    btn.textContent = '✨ Preencher com IA';
+    btn.disabled = false;
+  }
+}
+
+function saveCurrentStep() {
+  // Salva campos do step atual em theCallData
+  const fieldMap = {
+    'tc-name': 'name', 'tc-nickname': 'nickname', 'tc-age': 'age',
+    'tc-gender': 'gender', 'tc-origin': 'origin', 'tc-city': 'city',
+    'tc-backstory': 'backstory', 'tc-adjectives': 'adjectives',
+    'tc-tone': 'tone', 'tc-hobbies': 'hobbies', 'tc-never': 'never',
+    'tc-education': 'education', 'tc-languages': 'languages',
+    'tc-skills-tech': 'skills_tech', 'tc-line': 'line', 'tc-role': 'role',
+    'tc-objective': 'objective', 'tc-owner-name': 'owner_name',
+    'tc-owner-role': 'owner_role', 'tc-owner-company': 'owner_company',
+    'tc-owner-lang': 'owner_lang', 'tc-owner-challenges': 'owner_challenges',
+    'tc-channels': 'channels', 'tc-op-langs': 'op_langs',
+    'tc-deliveries': 'deliveries', 'tc-slug': 'slug',
+    'tc-color': 'color', 'tc-model': 'model',
+    'tc-telegram': 'telegram', 'tc-email': 'email',
+    'tc-ai-brief': 'ai_brief',
+  };
+  Object.entries(fieldMap).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) theCallData[key] = el.value;
+  });
+  // Teams (checkboxes)
+  const teamChecks = document.querySelectorAll('.tc-team-check:checked');
+  if (teamChecks.length) theCallData.teams = Array.from(teamChecks).map(c => c.value);
+}
+
+function val(key) { return theCallData[key] || ''; }
+
+function updateTheCallStep() {
+  const s = theCallSteps[theCallStep-1];
+  const totalSteps = theCallSteps.length;
+  document.getElementById('the-call-step-label').textContent =
+    `Etapa ${theCallStep} de ${totalSteps} · ${s.title}`;
+  // Renderiza campos chamando como função (suporta valores dinâmicos)
+  document.getElementById('the-call-form-content').innerHTML =
+    typeof s.fields === 'function' ? s.fields() : s.fields;
+
+  const prog = document.getElementById('the-call-progress');
+  prog.innerHTML = theCallSteps.map((_,i) =>
+    `<div class="step-dot ${i+1 < theCallStep ? 'done' : i+1 === theCallStep ? 'current' : ''}"></div>`
+  ).join('');
+
+  document.getElementById('tc-back-btn').style.display = theCallStep > 1 ? '' : 'none';
+  document.getElementById('tc-next-btn').textContent =
+    theCallStep === totalSteps ? '🚀 Criar Agente' : 'Continuar →';
+}
+
+function theCallBack() {
+  if (theCallStep > 1) {
+    saveCurrentStep();
+    theCallStep--;
+    updateTheCallStep();
+  }
+}
+
+async function theCallNext() {
+  saveCurrentStep();
+  if (theCallStep < theCallSteps.length) {
+    theCallStep++;
+    updateTheCallStep();
+  } else {
+    // Submit
+    const slug = theCallData.slug?.trim();
+    if (!slug) { showToast('ID do agente é obrigatório', 'error'); return; }
+    const teams = Array.from(document.querySelectorAll('.tc-team-check:checked')).map(c => c.value);
+    const payload = {
+      id: slug,
+      name: theCallData.name,
+      role: theCallData.role,
+      model: theCallData.model,
+      color: theCallData.color,
+      email: theCallData.email,
+      telegram_token: theCallData.telegram,
+      teams,
+      the_call_data: {...theCallData}
+    };
+    const method = isEditMode ? 'PUT' : 'POST';
+    const path = isEditMode ? `/api/agents/${slug}` : '/api/agents';
+    const res = await api(path, { method, body: JSON.stringify(payload) });
+    if (res?.ok) {
+      closeModal('modal-the-call');
+      showToast(`Agente ${payload.name} ${isEditMode ? 'atualizado' : 'criado'}!`);
+      setTimeout(() => loadAgents(), 1500);
+    } else {
+      showToast(res?.error || 'Erro ao salvar agente', 'error');
+    }
+  }
+}
+
+// ============================================================
+// MIGRATION
+// ============================================================
+function runMigration() { openModal('modal-migration'); }
+
+async function executeMigration() {
+  document.getElementById('migrate-btn').textContent = 'Migrando...';
+  document.getElementById('migrate-btn').disabled = true;
+  const progList = document.getElementById('migration-progress-list');
+  progList.innerHTML = '';
+
+  for (const agent of agents) {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:12px;font-family:JetBrains Mono,monospace;padding:4px 0';
+    item.innerHTML = `<span style="color:var(--amber)">⟳</span> ${agent.name} — migrando...`;
+    progList.appendChild(item);
+
+    const res = await api(`/api/agents/${agent.id}/migrate`, { method: 'POST' });
+    item.innerHTML = res?.ok
+      ? `<span style="color:var(--brand)">✓</span> ${agent.name} — migrado`
+      : `<span style="color:var(--red)">✗</span> ${agent.name} — ${res?.error || 'erro'}`;
+  }
+
+  document.getElementById('migrate-btn').textContent = '✓ Concluído';
+  document.getElementById('migration-banner').style.display = 'none';
+  showToast('Migração concluída!');
+}
+
+// ============================================================
+// LOGS
+// ============================================================
+async function loadLogs(agentId) {
+  const path = agentId ? `/api/logs?agent_id=${agentId}&limit=50` : '/api/logs?limit=50';
+  const data = await api(path);
+  const list = document.getElementById('logs-list');
+  if (!list) return;
+  list.innerHTML = (data?.logs || []).map(l => `
+    <div class="log-entry">
+      <div class="log-time">${formatTime(l.created_at)}</div>
+      <div class="log-agent ${l.action?.includes('error') ? 'log-err' : 'log-ok'}">${l.agent_id || 'sys'}</div>
+      <div class="log-action">${l.action} ${l.details ? '— '+l.details.substring(0,80) : ''}</div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:12px;padding:20px 0">Nenhum log encontrado</div>';
+}
+
+// ============================================================
+// BACKUPS
+// ============================================================
+async function loadBackups() {
+  const data = await api('/api/backups');
+  const list = document.getElementById('backups-list');
+  if (!list) return;
+  list.innerHTML = (data?.backups || []).map(b => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:var(--brand)"></div>
+      <div class="activity-text">${b.filename || b}</div>
+      <div class="activity-time">${b.created_at ? timeAgo(b.created_at) : ''}</div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:20px 0">Nenhum backup encontrado</div>';
+}
+
+async function triggerBackup() {
+  const res = await api('/api/backup', { method: 'POST' });
+  showToast(res?.ok ? 'Backup iniciado!' : (res?.error || 'Erro'), res?.ok ? 'ok' : 'error');
+}
+
+// ============================================================
+// TASKS
+// ============================================================
+async function loadTasks() {
+  const data = await api('/api/tasks');
+  const list = document.getElementById('tasks-list');
+  if (!list) return;
+  const tasks = data?.tasks || [];
+  list.innerHTML = tasks.length ? tasks.map(t => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:${t.status==='done'?'var(--brand)':t.priority==='high'?'var(--red)':'var(--amber)'}"></div>
+      <div class="activity-text"><strong>${t.title}</strong> <span style="color:var(--text3);font-size:11px">${t.agent_id || ''}</span></div>
+      <div class="activity-time" style="color:${t.status==='done'?'var(--brand)':'var(--text3)'}">${t.status}</div>
+    </div>`).join('') : '<div style="color:var(--text3);font-size:13px;padding:20px 0">Nenhuma tarefa encontrada</div>';
+}
+
+// ============================================================
+// PROJECTS
+// ============================================================
+async function loadProjects() {
+  const data = await api('/api/projects');
+  const list = document.getElementById('projects-list');
+  if (!list) return;
+  list.innerHTML = (data?.projects || []).map(p => `
+    <div class="activity-item">
+      <div class="activity-dot" style="background:var(--indigo)"></div>
+      <div class="activity-text"><strong>${p.name}</strong> ${p.description ? '— '+p.description.substring(0,60) : ''}</div>
+      <div class="activity-time">${timeAgo(p.created_at)}</div>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:20px 0">Nenhum projeto encontrado</div>';
+}
+
+// ============================================================
+// SECURITY
+// ============================================================
+async function loadSecurity() {
+  // Placeholder — real data comes from sapp_security_log when implemented
+  document.getElementById('sapp-n1-count').textContent = '—';
+  document.getElementById('sapp-n2-count').textContent = '—';
+  document.getElementById('sapp-n3-count').textContent = '—';
+  document.getElementById('sapp-inject-count').textContent = '—';
+  document.getElementById('security-log').innerHTML =
+    '<div style="color:var(--text3);font-size:12px">Log SAPP disponível após implementação do Adendo 2.0 no backend.</div>';
+}
+
+// ============================================================
+// MODAL HELPERS
+// ============================================================
+function openModal(id) { document.getElementById(id).classList.add('open') }
+function closeModal(id) { document.getElementById(id).classList.remove('open') }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')) });
+document.querySelectorAll('.modal-overlay').forEach(el => el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open') }));
+
+// ============================================================
+// UTILS
+// ============================================================
+function timeAgo(ts) {
+  if (!ts) return '';
+  const diff = Date.now() - new Date(ts).getTime();
+  const m = Math.floor(diff/60000);
+  if (m < 1) return 'agora';
+  if (m < 60) return `há ${m}min`;
+  const h = Math.floor(m/60);
+  if (h < 24) return `há ${h}h`;
+  return `há ${Math.floor(h/24)}d`;
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+}
+
+let toastTimer;
+function showToast(msg, type = 'ok') {
+  let toast = document.getElementById('toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:999;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;font-family:'Outfit',sans-serif;transition:opacity .3s;pointer-events:none`;
+    document.body.appendChild(toast);
+  }
+  toast.style.background = type === 'error' ? '#EF4444' : '#10B981';
+  toast.style.color = '#000';
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast.style.opacity = '0' }, 3000);
+}
+
+// Uptime counter
+let uptimeSeconds = 0;
+setInterval(() => {
+  uptimeSeconds++;
+  const h = Math.floor(uptimeSeconds/3600);
+  const m = Math.floor((uptimeSeconds%3600)/60);
+  const s = uptimeSeconds%60;
+  const el = document.getElementById('uptime-counter');
+  if (el) el.textContent = `${h}h${m.toString().padStart(2,'0')}m`;
+}, 1000);
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  if (!TOKEN) { showLogin(); return; }
+  const me = await api('/api/auth/me');
+  if (!me) return;
+  await loadOverview();
+}
+
+init();
+</script>
+</body>
+</html>
