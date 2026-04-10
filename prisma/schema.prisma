@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model organizations {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  plan          String   @default("starter")
+  logo_url      String?
+  primary_color String   @default("#10B981")
+  openclaw_api_key String?
+  openclaw_url  String   @default("https://dashboard.fbrapps.com")
+  active        Boolean  @default(true)
+  created_at    DateTime @default(now())
+
+  organization_members organization_members[]
+  profiles           profiles[]
+  agents_cache       agents_cache[]
+  agent_status       agent_status[]
+  invitations        invitations[]
+
+  @@map("organizations")
+}
+
+model organization_members {
+  id              String   @id @default(cuid())
+  organization_id String
+  user_id         String
+  role            String   @default("member")
+  joined_at       DateTime @default(now())
+
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, user_id])
+  @@map("organization_members")
+}
+
+model profiles {
+  id             String     @id
+  full_name      String?
+  avatar_url     String?
+  current_org_id String?
+  created_at     DateTime   @default(now())
+
+  organization organizations? @relation(fields: [current_org_id], references: [id])
+
+  @@map("profiles")
+}
+
+model agents_cache {
+  id              String   @id @default(cuid())
+  organization_id String
+  openclaw_id     String
+  name            String
+  role            String?
+  career          String?
+  model           String?
+  color           String   @default("#10B981")
+  active          Boolean  @default(true)
+  skills          String[]
+  last_synced_at  DateTime?
+  metadata        Json?
+
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, openclaw_id])
+  @@map("agents_cache")
+}
+
+model agent_status {
+  id              String   @id @default(cuid())
+  organization_id String
+  openclaw_id     String
+  status          String   @default("offline")
+  last_seen       DateTime?
+  tasks_pending   Int      @default(0)
+  tasks_done      Int      @default(0)
+  updated_at      DateTime @default(now())
+
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, openclaw_id])
+  @@map("agent_status")
+}
+
+model invitations {
+  id              String   @id @default(cuid())
+  organization_id String
+  email           String
+  role            String   @default("member")
+  token           String   @unique
+  expires_at      DateTime @default(now())
+  created_by      String?
+  accepted_at     DateTime?
+  created_at      DateTime @default(now())
+
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("invitations")
+}
