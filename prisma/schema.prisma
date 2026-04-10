@@ -67,6 +67,8 @@ model agents_cache {
   last_synced_at  DateTime?
   metadata        String?
 
+  status          agent_status? @relation("AgentToStatus", fields: [organization_id, openclaw_id], references: [organization_id, openclaw_id])
+
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, openclaw_id])
@@ -84,6 +86,7 @@ model agent_status {
   updated_at      DateTime @default(now())
 
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  agent        agents_cache? @relation("AgentToStatus")
 
   @@unique([organization_id, openclaw_id])
   @@map("agent_status")
