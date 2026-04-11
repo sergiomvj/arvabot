@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@prisma/client": "^5.12.1",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.0",
     "clsx": "^2.1.0",
     "date-fns": "^3.6.0",
     "lucide-react": "^0.368.0",

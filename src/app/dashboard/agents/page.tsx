@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma"
 import { AgentCard } from "@/components/agent-card"
 
+export const dynamic = 'force-dynamic'
+
 export default async function AgentsPage() {
   const agents = await prisma.agents_cache.findMany({
-    include: { agent_status: true }
+    include: { status: true }
   })
 
   return (
@@ -16,7 +18,7 @@ export default async function AgentsPage() {
       </div>
       <div className="agents-grid grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-4">
         {agents.map((agent) => (
-          <AgentCard key={agent.id} agent={agent} status={agent.agent_status} />
+          <AgentCard key={agent.id} agent={agent} status={agent.status} />
         ))}
       </div>
     </div>

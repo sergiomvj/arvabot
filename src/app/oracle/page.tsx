@@ -1,9 +1,11 @@
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic'
+
 export default async function OraclePage() {
-  const ranking = await prisma.agentsCache.findMany({
-    include: { agentStatus: true },
-    orderBy: { agentStatus: { tasksDone: 'desc' } }
+  const ranking = await prisma.agents_cache.findMany({
+    include: { status: true },
+    orderBy: { status: { tasks_done: 'desc' } }
   });
 
   return (
@@ -13,7 +15,7 @@ export default async function OraclePage() {
         {ranking.map((agent) => (
           <div key={agent.id} className="stat-card bg-[#0C0F1A] p-4 rounded-lg border border-white/7">
             <div className="stat-value text-lg font-bold">{agent.name}</div>
-            <div className="stat-sub text-xs text-[#8892b0]">Score: {agent.agentStatus?.tasksDone || 0}</div>
+            <div className="stat-sub text-xs text-[#8892b0]">Score: {agent.status?.tasks_done || 0}</div>
           </div>
         ))}
       </div>

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = 'force-dynamic'
+
 export default async function Dashboard() {
   const agentsCount = await prisma.agents_cache.count()
   const onlineAgents = await prisma.agent_status.count({
