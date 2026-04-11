@@ -1,0 +1,11 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="arva-gradient" x1="0" y1="128" x2="128" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10B981"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <!-- Geometric "A" structure -->
+  <path d="M64 20L15 108H35L64 50L93 108H113L64 20Z" fill="url(#arva-gradient)"/>
+  <path d="M42 82H86V94H42V82Z" fill="url(#arva-gradient)" fill-opacity="0.8"/>
+</svg>
