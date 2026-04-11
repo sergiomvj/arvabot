@@ -1,1 +1,1 @@
-{"version":1,"functions":{"/api/tasks":{},"/api/oracle":{},"/dashboard/agents":{},"/dashboard":{},"/oracle":{},"/tasks":{}}}
+{"version":1,"functions":{"/api/tasks":{},"/api/oracle":{},"/tasks":{},"/dashboard":{},"/oracle":{},"/dashboard/agents":{}}}
