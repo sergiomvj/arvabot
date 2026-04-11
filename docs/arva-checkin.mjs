@@ -248,3 +248,26 @@ app.get('/api/checkins/summary', authOrApiKey, requireScope('checkin'), async (r
     res.json({ ok: true, date: targetDate, agents: result.rows });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
+
+// Supabase upsert agent_status after checkin
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://gcsikdrqomjnhzcqrcsu.supabase.co';
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdjc2lrZHJxb21qbmh6Y3FyY3N1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTg2Mzc3MiwiZXhwIjoyMDkxNDM5NzcyfQ.lqPSMYZbHZnchS9rStli1qGnsaW4U4_wc6IMyR6XSEI';
+
+ // After workspaceUpdated = true
+await fetch(`${SUPABASE_URL}/rest/v1/agent_status`, {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+    'Prefer': 'resolution=merge-duplicates'
+  },
+  body: JSON.stringify({
+    organization_id: 'cbe3cee1-1340-4b02-bebd-41e1c2dd7913',
+    openclaw_id: agent.id,
+    status: 'online',
+    last_seen: new Date().toISOString(),
+    tasks_pending: tasksInjected,
+    updated_at: new Date().toISOString()
+  })
+});
+
