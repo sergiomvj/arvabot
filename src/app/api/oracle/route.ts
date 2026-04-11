@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
   const supabase = createClient();
   const { agentId, message } = await req.json();
 
-  // OpenClaw ORACLE endpoint mock → real arva-oracle.mjs
+  // ORACLE OpenClaw endpoint
   const oracleRes = await fetch('https://dashboard.fbrapps.com/api/oracle', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -13,9 +14,19 @@ export async function POST(req: NextRequest) {
   });
   const oracleData = await oracleRes.json();
 
-  // Ranking
-  const rankingRes = await fetch('https://ranking.fbrapps.com/api/oracle/ranking');
-  const ranking = await rankingRes.json();
+  // Ranking from Prisma
+  const ranking = await prisma.agentsCache.findMany({
+    include: { agentStatus: true },
+    orderBy: { agentStatus: { tasksDone: 'desc' } }
+  });
 
   return NextResponse.json({ oracle: oracleData, ranking });
+}
+
+export async function GET(req: NextRequest) {
+  const ranking = await prisma.agentsCache.findMany({
+    include: { agentStatus: true },
+    orderBy: { agentStatus: { tasksDone: 'desc' } }
+  });
+  return NextResponse.json({ ranking });
 }

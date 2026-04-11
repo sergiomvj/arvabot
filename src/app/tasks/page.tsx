@@ -1,13 +1,21 @@
 import { prisma } from '@/lib/prisma';
 
 export default async function TasksPage() {
-  const tasks = await prisma.agentStatus.findMany();
+  const tasks = await prisma.agentStatus.findMany({
+    include: { agent: true }
+  });
 
   return (
     <div className="p-5">
-      <h1 className="text-xl font-bold text-white">Tasks Kanban</h1>
-      <p>Kanban filtrado org/agent (Prisma realtime)</p>
+      <h1 className="text-xl font-bold text-white mb-4">Tasks Kanban</h1>
+      <div className="grid grid-cols-4 gap-4">
+        {tasks.map((task) => (
+          <div key={task.id} className="stat-card bg-[#0C0F1A] p-4 rounded-lg border border-white/7">
+            <div className="stat-value text-lg">{task.agent?.name}</div>
+            <div className="stat-sub text-xs">{task.status} ({task.tasksPending})</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
-EOF
