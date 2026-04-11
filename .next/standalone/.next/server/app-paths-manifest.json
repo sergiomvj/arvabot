@@ -1,0 +1,9 @@
+{
+  "/_not-found": "app/_not-found.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/oracle/route": "app/api/oracle/route.js",
+  "/dashboard/agents/page": "app/dashboard/agents/page.js",
+  "/api/tasks/route": "app/api/tasks/route.js",
+  "/tasks/page": "app/tasks/page.js",
+  "/oracle/page": "app/oracle/page.js"
+}
