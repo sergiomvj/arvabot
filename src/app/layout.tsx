@@ -4,6 +4,8 @@ import "./globals.css"
 import { OrgSwitcher } from "@/components/org-switcher"
 import { createClient } from "@/lib/supabase/server"
 import { prisma } from "@/lib/prisma"
+import Link from "next/link"
+import { Settings, Users, LayoutDashboard } from "lucide-react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -56,12 +58,16 @@ export default async function RootLayout({
               </div>
               <nav className="sidebar-nav flex-1 p-2.5 overflow-y-auto flex flex-col gap-0.5">
                 <div className="nav-group-label text-xs uppercase tracking-wider text-[#4a5580] p-2 font-mono">Principal</div>
-                <div className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer active">
-                  <span className="nav-icon text-base">◎</span> Overview
-                </div>
-                <div className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
-                  <span className="nav-icon text-base">👥</span> Agentes
-                </div>
+                <Link href="/dashboard" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer active">
+                  <LayoutDashboard size={16} /> Overview
+                </Link>
+                <Link href="/dashboard/agents" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
+                  <Users size={16} /> Agentes
+                </Link>
+                <div className="mt-4 nav-group-label text-xs uppercase tracking-wider text-[#4a5580] p-2 font-mono">Sistema</div>
+                <Link href="/dashboard/settings" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
+                  <Settings size={16} /> Configurações
+                </Link>
               </nav>
               <OrgSwitcher currentOrg={currentOrg} allOrgs={userOrgs} />
             </aside>

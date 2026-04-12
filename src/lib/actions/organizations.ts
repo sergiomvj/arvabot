@@ -118,3 +118,28 @@ export async function acceptInvitation(token: string) {
   revalidatePath('/')
   redirect('/dashboard/agents')
 }
+
+export async function updateOrganizationSettings(formData: FormData) {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Não autorizado')
+
+  const profile = await prisma.profiles.findUnique({
+    where: { id: session.user.id }
+  })
+  if (!profile?.current_org_id) throw new Error('Nenhuma organização selecionada')
+
+  const url = formData.get('openclaw_url') as string
+  const apiKey = formData.get('openclaw_api_key') as string
+
+  await prisma.organizations.update({
+    where: { id: profile.current_org_id },
+    data: {
+      openclaw_url: url,
+      openclaw_api_key: apiKey
+    }
+  })
+
+  revalidatePath('/dashboard/settings')
+  return { success: true }
+}
