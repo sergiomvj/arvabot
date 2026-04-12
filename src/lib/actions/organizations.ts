@@ -69,3 +69,52 @@ export async function switchOrganization(orgId: string) {
   revalidatePath('/')
   return { success: true }
 }
+
+export async function acceptInvitation(token: string) {
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session) redirect(`/login?next=/invite/${token}`)
+
+  // 1. Validar convite
+  const invite = await prisma.invitations.findUnique({
+    where: { token },
+    include: { organization: true }
+  })
+
+  if (!invite || invite.expires_at < new Date()) {
+    throw new Error('Convite inválido ou expirado')
+  }
+
+  // 2. Criar membro
+  await prisma.organization_members.upsert({
+    where: {
+      organization_id_user_id: {
+        organization_id: invite.organization_id,
+        user_id: session.user.id
+      }
+    },
+    update: { role: invite.role },
+    create: {
+      organization_id: invite.organization_id,
+      user_id: session.user.id,
+      role: invite.role
+    }
+  })
+
+  // 3. Setar como org atual
+  await prisma.profiles.upsert({
+    where: { id: session.user.id },
+    update: { current_org_id: invite.organization_id },
+    create: {
+      id: session.user.id,
+      current_org_id: invite.organization_id
+    }
+  })
+
+  // 4. Limpar convite
+  await prisma.invitations.delete({ where: { id: invite.id } })
+
+  revalidatePath('/')
+  redirect('/dashboard/agents')
+}
