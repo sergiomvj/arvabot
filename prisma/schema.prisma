@@ -25,6 +25,7 @@ model organizations {
   agents_cache       agents_cache[]
   agent_status       agent_status[]
   invitations        invitations[]
+  agent_threads      agent_threads[]
 
   @@map("organizations")
 }
@@ -69,6 +70,7 @@ model agents_cache {
   metadata        Json?
 
   status          agent_status? @relation("AgentToStatus", fields: [organization_id, openclaw_id], references: [organization_id, openclaw_id])
+  threads         agent_threads[]
 
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
@@ -107,4 +109,22 @@ model invitations {
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("invitations")
+}
+
+model agent_threads {
+  id              String   @id @default(cuid())
+  organization_id String
+  agent_id        String
+  user_identifier String
+  theme           String
+  context         String   @db.Text
+  channel         String?
+  status          String   @default("active") // active | resolved
+  last_interaction DateTime @default(now())
+  created_at      DateTime @default(now())
+
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  agent        agents_cache @relation(fields: [organization_id, agent_id], references: [organization_id, openclaw_id], onDelete: Cascade)
+
+  @@map("agent_threads")
 }

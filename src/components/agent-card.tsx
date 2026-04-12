@@ -1,4 +1,5 @@
-import { User, Activity, Clock, CheckCircle2 } from 'lucide-react'
+import { User, Activity, Clock, CheckCircle2, Brain } from 'lucide-react'
+import Link from 'next/link'
 
 interface AgentCardProps {
   agent: any
@@ -60,9 +61,13 @@ export function AgentCard({ agent, status }: AgentCardProps) {
             <Clock size={10} />
             {status?.last_seen ? new Date(status.last_seen).toLocaleTimeString() : 'Offline'}
           </div>
-          <button className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors">
-            Gerenciar →
-          </button>
+          <Link 
+            href={`/dashboard/agents/${agent.openclaw_id}/memory`}
+            className="flex items-center gap-1.5 text-emerald-400 hover:text-emerald-300 font-semibold transition-colors uppercase tracking-tight"
+          >
+            <Brain size={12} />
+            Memória →
+          </Link>
         </div>
       </div>
     </div>
