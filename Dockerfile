@@ -2,7 +2,8 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+# Instala dependências mas DESABILITA postinstall do Prisma para não gerar engine aqui
+RUN npm ci --ignore-scripts
 
 FROM node:20-alpine AS builder
 RUN apk add --no-cache openssl
@@ -23,7 +24,10 @@ ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma/
 COPY . .
+
+# Gera o engine correto (linux-musl-openssl-3.0.x) para Alpine
 RUN npx prisma generate
+
 RUN npm run build
 
 FROM node:20-alpine AS runner
