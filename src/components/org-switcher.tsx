@@ -1,3 +1,5 @@
+'use client'
+
 import { useState } from 'react'
 import { ChevronDown, Building2, Plus, LogOut } from 'lucide-react'
 import { switchOrganization } from '@/lib/actions/organizations'
