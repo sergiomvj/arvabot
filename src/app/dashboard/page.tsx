@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
-import { Users, CheckCircle2, Folder, Activity, Clock, Globe, MessageSquare } from 'lucide-react'
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { Users, Activity, Clock, Globe, MessageSquare } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,17 +17,45 @@ function StatCard({ label, value, sub, color }: { label: string, value: any, sub
 }
 
 export default async function Dashboard() {
-  const agentsCount = await prisma.agents_cache.count()
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) redirect('/login')
+
+  const profile = await prisma.profiles.findUnique({
+    where: { id: session.user.id }
+  })
+
+  if (!profile?.current_org_id) redirect('/organizations')
+
+  const orgId = profile.current_org_id
+
+  // ── FILTRO POR ORGANIZAÇÃO ──
+  const agentsCount = await prisma.agents_cache.count({
+    where: { organization_id: orgId }
+  })
+  
   const onlineAgents = await prisma.agent_status.count({
-    where: { status: 'online' }
+    where: { 
+      organization_id: orgId,
+      status: 'online' 
+    }
   })
   
   const threadsCount = await prisma.agent_threads.count({
-    where: { status: 'active' }
+    where: { 
+      organization_id: orgId,
+      status: 'active' 
+    }
   })
 
-  // Mocking heartbeat and projects for UI consistency with the requested layout
-  const projectsCount = 4
+  const recentAgents = await prisma.agents_cache.findMany({
+    where: { organization_id: orgId },
+    include: { status: true },
+    take: 5,
+    orderBy: { last_synced_at: 'desc' }
+  })
+
+  // Mocking heartbeat for UI consistency
   const nextHeartbeat = 2
 
   return (
@@ -35,7 +65,7 @@ export default async function Dashboard() {
         <StatCard 
           label="Agentes Ativos" 
           value={onlineAgents} 
-          sub={`${agentsCount} total registrados`} 
+          sub={`${agentsCount} neste workspace`} 
           color="#10B981" 
         />
         <StatCard 
@@ -47,7 +77,7 @@ export default async function Dashboard() {
         <StatCard 
           label="Threads Ativas" 
           value={threadsCount} 
-          sub="sessões bridge ativas" 
+          sub="sessões bridge coletadas" 
           color="#F59E0B" 
         />
         <StatCard 
@@ -67,22 +97,36 @@ export default async function Dashboard() {
             </h2>
           </div>
           <div className="space-y-3">
-            {/* Recent Agents List Item Sample */}
-            <div className="bg-[#07090F] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-all cursor-pointer">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 font-bold">
-                  M
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-white">Mila Castro</div>
-                  <div className="text-[10px] text-[#4a5580] uppercase tracking-wider font-mono">Marketing Manager</div>
-                </div>
+            {recentAgents.length === 0 ? (
+              <div className="py-10 text-center border border-dashed border-white/5 rounded-xl">
+                 <p className="text-[10px] text-[#4a5580] uppercase tracking-widest font-mono">Nenhum agente sincronizado</p>
               </div>
-              <div className="flex items-center gap-1.5 text-[10px] text-emerald-500 font-mono font-bold bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/10">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                ONLINE
-              </div>
-            </div>
+            ) : (
+              recentAgents.map(agent => (
+                <div key={agent.id} className="bg-[#07090F] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-all cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold border"
+                      style={{ 
+                        backgroundColor: `${agent.color || '#10B981'}20`, 
+                        color: agent.color || '#10B981',
+                        borderColor: `${agent.color || '#10B981'}40`
+                      }}
+                    >
+                      {agent.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-white">{agent.name}</div>
+                      <div className="text-[10px] text-[#4a5580] uppercase tracking-wider font-mono">{agent.role || 'Agente'}</div>
+                    </div>
+                  </div>
+                  <div className={`flex items-center gap-1.5 text-[10px] font-mono font-bold bg-white/5 px-2 py-1 rounded border border-white/10 ${agent.status?.status === 'online' ? 'text-emerald-500' : 'text-[#4a5580]'}`}>
+                    {agent.status?.status === 'online' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />}
+                    {(agent.status?.status || 'OFFLINE').toUpperCase()}
+                  </div>
+                </div>
+              ))
+            )}
             
             <div className="bg-[#07090F] border border-white/5 rounded-xl p-4 flex items-center justify-center opacity-40">
               <p className="text-[10px] text-[#4a5580] uppercase tracking-widest font-mono">Sincronização em tempo real ativa</p>
@@ -106,8 +150,8 @@ export default async function Dashboard() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-white">Sincronização Hub</div>
-                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Dados de 4 agentes atualizados via API Master</div>
-                <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Há 2 minutos</div>
+                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Sincronização configurada p/ workspace atual</div>
+                <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Status Atualizado</div>
               </div>
             </div>
 
@@ -116,9 +160,9 @@ export default async function Dashboard() {
                 <MessageSquare size={14} />
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">Session Bridge</div>
-                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Nova thread de memória registrada por Chiara Garcia</div>
-                <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Há 15 minutos</div>
+                <div className="text-xs font-semibold text-white">Prisma UUID Fix</div>
+                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Ambiente estabilizado para multi-tenancy</div>
+                <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Aplicado Agora</div>
               </div>
             </div>
 
@@ -128,8 +172,8 @@ export default async function Dashboard() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-[#8892b0]">Sistema Online</div>
-                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Todos os módulos operacionais estão estáveis</div>
-                <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Iniciado há 26h</div>
+                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Módulo Multi-tenant isolado por organização</div>
+                <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Online</div>
               </div>
             </div>
           </div>

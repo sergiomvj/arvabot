@@ -8,6 +8,12 @@ export async function syncAgentsData(organizationId: string) {
 
   if (!org) throw new Error('Organização não encontrada')
   if (!org.openclaw_url) throw new Error('URL do OpenClaw não configurada')
+  if (!org.openclaw_api_key) {
+    return { 
+      success: false, 
+      error: 'API Key não configurada. Vá em "Configurações" e insira sua Service Role Key do OpenClaw.' 
+    }
+  }
 
   try {
     // 2. Buscar agentes reais da API Master
