@@ -22,16 +22,27 @@ export default async function RootLayout({
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
-  // Buscar organizao atual e lista de todas as orgs do usurio
   let currentOrg = null
   let userOrgs: any[] = []
 
   if (session) {
-    const profile = await prisma.profiles.findUnique({
+    // Auto-criar perfil se não existir (novos usuários adicionados diretamente no Supabase)
+    let profile = await prisma.profiles.findUnique({
       where: { id: session.user.id },
       include: { organization: true }
     })
-    
+
+    if (!profile) {
+      profile = await prisma.profiles.create({
+        data: {
+          id: session.user.id,
+          full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Usuário',
+          avatar_url: session.user.user_metadata?.avatar_url || null,
+        },
+        include: { organization: true }
+      })
+    }
+
     currentOrg = profile?.organization || null
 
     const memberships = await prisma.organization_members.findMany({
@@ -41,8 +52,6 @@ export default async function RootLayout({
     userOrgs = memberships.map(m => m.organization)
   }
 
-  // Verificar se  uma pgina que no deve ter sidebar
-  // (Num app real usaramos Route Groups (auth) e (dashboard))
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
@@ -70,6 +79,24 @@ export default async function RootLayout({
                 </Link>
               </nav>
               <OrgSwitcher currentOrg={currentOrg} allOrgs={userOrgs} />
+            </aside>
+          )}
+          {/* Usuário logado mas sem organização: mostra aviso inline */}
+          {session && !currentOrg && (
+            <aside className="sidebar w-[190px] flex-shrink-0 bg-[#0C0F1A] border-r border-white/7 flex flex-col overflow-hidden">
+              <div className="p-4 border-b border-white/7 flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center text-lg font-bold">🤖</div>
+                <div className="brand-name font-bold text-sm">ARVABots</div>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+                <p className="text-[#4a5580] text-xs mb-4">Você não está em nenhuma organização.</p>
+                <Link
+                  href="/organizations"
+                  className="text-xs bg-emerald-500 text-black font-bold px-3 py-2 rounded-lg hover:bg-emerald-400 transition-colors"
+                >
+                  Entrar / Criar Org
+                </Link>
+              </div>
             </aside>
           )}
           <main className="flex-1 flex flex-col overflow-hidden bg-[#07090F]">
