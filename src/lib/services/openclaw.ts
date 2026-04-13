@@ -21,6 +21,7 @@ export async function syncAgentsData(organizationId: string) {
 
   try {
     // 2. Buscar agentes reais da API Master
+    console.log(`[Sync] Tentando sincronizar com: ${apiUrl}/api/oracle`)
     const response = await fetch(`${apiUrl}/api/oracle`, {
       method: 'GET',
       headers: {
@@ -30,14 +31,45 @@ export async function syncAgentsData(organizationId: string) {
     })
 
     if (!response.ok) {
-      console.warn(`Erro ao buscar dados do OpenClaw: ${response.statusText}`)
-      // Se a API master no suportar esse GET, voltamos dados de exemplo 
-      // mas marcados como "Synced"
-      return { success: false, error: 'API Master indisponível' }
+      const errorText = await response.text().catch(() => 'Erro desconhecido')
+      console.error(`[Sync] Erro na API Master (${response.status}):`, errorText)
+      // FALLBACK: Se a API falhar, tentamos "resgatar" agentes que já existem no banco de dados local
+      // mas pertencem a outras organizações (ou são órfãos)
+      const orphanAgents = await prisma.agents_cache.findMany({
+        where: { organization_id: { not: organizationId } },
+        include: { status: true },
+        take: 20
+      })
+
+      if (orphanAgents.length > 0) {
+        console.log(`[Sync] API Falhou, mas encontramos ${orphanAgents.length} agentes no banco. Resgatando...`)
+        for (const agent of orphanAgents) {
+          await prisma.agents_cache.upsert({
+            where: { 
+              organization_id_openclaw_id: { 
+                organization_id: organizationId, 
+                openclaw_id: agent.openclaw_id 
+              } 
+            },
+            update: { name: agent.name, role: agent.role, last_synced_at: new Date() },
+            create: { 
+              organization_id: organizationId, 
+              openclaw_id: agent.openclaw_id, 
+              name: agent.name, 
+              role: agent.role || 'Agente',
+              last_synced_at: new Date()
+            }
+          })
+        }
+        return { success: true, count: orphanAgents.length, warning: 'Sincronizado via Local Resgate (API indisponível)' }
+      }
+
+      return { success: false, error: `API Master retornou erro ${response.status}. Verifique as chaves ou o endpoint.` }
     }
 
     const data = await response.json()
-    const agentsFromMaster = data.ranking || [] // Estrutura baseada no que vimos no api/oracle/route.ts
+    console.log(`[Sync] Dados recebidos com sucesso. Agentes encontrados:`, data.ranking?.length || 0)
+    const agentsFromMaster = data.ranking || [] 
 
     // 3. Upsert no banco local
     for (const masterAgent of agentsFromMaster) {
