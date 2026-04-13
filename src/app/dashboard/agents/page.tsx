@@ -25,6 +25,14 @@ export default async function AgentsPage() {
     include: { status: true }
   })
 
+  // Buscar todas as organizações onde o usuário é membro para permitir transferência
+  const userMemberships = await prisma.organization_members.findMany({
+    where: { user_id: session.user.id },
+    include: { organization: true }
+  })
+
+  const organizations = userMemberships.map(m => m.organization)
+
   return (
     <div className="p-5">
       <div className="flex items-center gap-2.5 mb-4 flex-wrap">
@@ -41,7 +49,13 @@ export default async function AgentsPage() {
           </div>
         ) : (
           agents.map((agent) => (
-            <AgentCard key={agent.id} agent={agent} status={agent.status} />
+            <AgentCard 
+              key={agent.id} 
+              agent={agent} 
+              status={agent.status}
+              organizations={organizations}
+              currentOrgId={profile.current_org_id!}
+            />
           ))
         )}
       </div>

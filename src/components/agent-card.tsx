@@ -1,11 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { Brain } from 'lucide-react'
+import { Brain, Move } from 'lucide-react'
+import { TransferModal } from './transfer-modal'
 
 interface AgentCardProps {
   agent: any
   status: any
+  organizations?: any[]
+  currentOrgId?: string
 }
 
 const MD_FILES = [
@@ -55,7 +59,8 @@ function SmtBar({ label, pct, color }: { label: string; pct: number; color: stri
   )
 }
 
-export function AgentCard({ agent, status }: AgentCardProps) {
+export function AgentCard({ agent, status, organizations = [], currentOrgId = '' }: AgentCardProps) {
+  const [showTransfer, setShowTransfer] = useState(false)
   const metadata = typeof agent.metadata === 'string' ? JSON.parse(agent.metadata || '{}') : (agent.metadata || {})
   const agentColor = agent.color || '#10B981'
   const isOnline = status?.status === 'online'
@@ -207,12 +212,32 @@ export function AgentCard({ agent, status }: AgentCardProps) {
         }}>
           📋 The Call
         </Link>
+        <button 
+          onClick={() => setShowTransfer(true)}
+          style={{
+            width: 34, padding: '7px 4px', borderRadius: 7, fontSize: 14, fontWeight: 600,
+            border: '1px solid rgba(16,185,129,.15)', background: '#111528',
+            color: '#10B981', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          title="Transferir Agente"
+        >
+          <Move size={14} />
+        </button>
         <button style={{
           width: 34, padding: '7px 4px', borderRadius: 7, fontSize: 14, fontWeight: 600,
           border: '1px solid rgba(255,255,255,0.07)', background: '#111528',
           color: '#EC4899', cursor: 'pointer',
         }}>💓</button>
       </div>
+
+      {showTransfer && (
+        <TransferModal 
+          agent={agent}
+          organizations={organizations}
+          currentOrgId={currentOrgId}
+          onClose={() => setShowTransfer(false)}
+        />
+      )}
     </div>
   )
 }
