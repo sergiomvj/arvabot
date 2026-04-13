@@ -1,17 +1,20 @@
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
 FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
-ARG SUPABASE_CONECTOR
+
+ARG DATABASE_URL
 ARG DIRECT_URL
 ARG SUPABASE_URL
 ARG SUPABASE_ANON_KEY
 ARG SUPABASE_SERVICE_ROLE_KEY
-ENV DATABASE_URL=${SUPABASE_CONECTOR}
+
+ENV DATABASE_URL=${DATABASE_URL}
 ENV DIRECT_URL=${DIRECT_URL}
 ENV NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
@@ -24,6 +27,7 @@ RUN npx prisma generate
 RUN npm run build
 
 FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl
 WORKDIR /app
 ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs
@@ -32,6 +36,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma/client ./node_modules/.prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma ./prisma/schema.prisma
 USER nextjs
 EXPOSE 3000
