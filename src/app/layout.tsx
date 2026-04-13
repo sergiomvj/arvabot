@@ -59,10 +59,10 @@ export default async function RootLayout({
           {session && currentOrg && (
             <aside className="sidebar w-[190px] flex-shrink-0 bg-[#0C0F1A] border-r border-white/7 flex flex-col overflow-hidden">
               <div className="sidebar-brand p-4 border-b border-white/7 flex items-center gap-2.5">
-                <div className="brand-icon w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center text-lg font-bold">🤖</div>
+                <div className="brand-icon w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center text-lg font-bold">🦞</div>
                 <div>
-                  <div className="brand-name font-bold text-sm">ARVABots</div>
-                  <div className="brand-sub text-xs text-[#4a5580] font-mono">arva.fbrapps.com</div>
+                  <div className="brand-name font-bold text-sm">OpenClaw</div>
+                  <div className="brand-sub text-xs text-[#4a5580] font-mono whitespace-nowrap overflow-hidden text-ellipsis">dashboard.fbrapps.com</div>
                 </div>
               </div>
               <nav className="sidebar-nav flex-1 p-2.5 overflow-y-auto flex flex-col gap-0.5">
@@ -84,9 +84,11 @@ export default async function RootLayout({
           {/* Usuário logado mas sem organização: mostra aviso inline */}
           {session && !currentOrg && (
             <aside className="sidebar w-[190px] flex-shrink-0 bg-[#0C0F1A] border-r border-white/7 flex flex-col overflow-hidden">
-              <div className="p-4 border-b border-white/7 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center text-lg font-bold">🤖</div>
-                <div className="brand-name font-bold text-sm">ARVABots</div>
+              <div className="sidebar-brand p-4 border-b border-white/7 flex items-center gap-2.5">
+                <div className="brand-icon w-8 h-8 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 flex items-center justify-center text-lg font-bold">🦞</div>
+                <div>
+                   <div className="brand-name font-bold text-sm">OpenClaw</div>
+                </div>
               </div>
               <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
                 <p className="text-[#4a5580] text-xs mb-4">Você não está em nenhuma organização.</p>
