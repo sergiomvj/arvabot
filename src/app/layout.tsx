@@ -26,12 +26,19 @@ export default async function RootLayout({
   let userOrgs: any[] = []
 
   if (session) {
-    // Auto-criar perfil se não existir (novos usuários adicionados diretamente no Supabase)
-    let profile = await prisma.profiles.findUnique({
-      where: { id: session.user.id },
-      include: { organization: true }
-    })
+    // 1. Executar consultas em paralelo para ganhar performance
+    const [existingProfile, memberships] = await Promise.all([
+      prisma.profiles.findUnique({
+        where: { id: session.user.id },
+        include: { organization: true }
+      }),
+      prisma.organization_members.findMany({
+        where: { user_id: session.user.id },
+        include: { organization: true }
+      })
+    ])
 
+    let profile = existingProfile
     if (!profile) {
       profile = await prisma.profiles.create({
         data: {
@@ -44,11 +51,6 @@ export default async function RootLayout({
     }
 
     currentOrg = profile?.organization || null
-
-    const memberships = await prisma.organization_members.findMany({
-      where: { user_id: session.user.id },
-      include: { organization: true }
-    })
     userOrgs = memberships.map(m => m.organization)
   }
 
@@ -101,7 +103,7 @@ export default async function RootLayout({
               </div>
             </aside>
           )}
-          <main className="flex-1 flex flex-col overflow-hidden bg-[#07090F]">
+          <main className="flex-1 flex flex-col overflow-y-auto bg-[#07090F] scroll-smooth">
             {children}
           </main>
         </div>

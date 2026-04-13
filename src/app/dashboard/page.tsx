@@ -29,31 +29,20 @@ export default async function Dashboard() {
 
   const orgId = profile.current_org_id
 
-  // ── FILTRO POR ORGANIZAÇÃO ──
-  const agentsCount = await prisma.agents_cache.count({
-    where: { organization_id: orgId }
-  })
-  
-  const onlineAgents = await prisma.agent_status.count({
-    where: { 
-      organization_id: orgId,
-      status: 'online' 
-    }
-  })
-  
-  const threadsCount = await prisma.agent_threads.count({
-    where: { 
-      organization_id: orgId,
-      status: 'active' 
-    }
-  })
+  const orgId = profile.current_org_id
 
-  const recentAgents = await prisma.agents_cache.findMany({
-    where: { organization_id: orgId },
-    include: { status: true },
-    take: 5,
-    orderBy: { last_synced_at: 'desc' }
-  })
+  // ── CONSULTAS PARALELAS PARA PERFORMANCE ──
+  const [agentsCount, onlineAgents, threadsCount, recentAgents] = await Promise.all([
+    prisma.agents_cache.count({ where: { organization_id: orgId } }),
+    prisma.agent_status.count({ where: { organization_id: orgId, status: 'online' } }),
+    prisma.agent_threads.count({ where: { organization_id: orgId, status: 'active' } }),
+    prisma.agents_cache.findMany({
+      where: { organization_id: orgId },
+      include: { status: true },
+      take: 5,
+      orderBy: { last_synced_at: 'desc' }
+    })
+  ])
 
   // Mocking heartbeat for UI consistency
   const nextHeartbeat = 2
