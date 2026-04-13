@@ -7,22 +7,24 @@ export async function syncAgentsData(organizationId: string) {
   })
 
   if (!org) throw new Error('Organização não encontrada')
-  if (!org.openclaw_url) throw new Error('URL do OpenClaw não configurada')
-  if (!org.openclaw_api_key) {
+  
+  const apiUrl = org.openclaw_url || process.env.OPENCLAW_API_URL
+  const apiKey = org.openclaw_api_key || process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!apiUrl) throw new Error('URL do OpenClaw não configurada')
+  if (!apiKey) {
     return { 
       success: false, 
-      error: 'API Key não configurada. Vá em "Configurações" e insira sua Service Role Key do OpenClaw.' 
+      error: 'API Key não configurada no banco nem no Servidor (.env).' 
     }
   }
 
   try {
     // 2. Buscar agentes reais da API Master
-    // Nota: Usando /api/oracle como fallback se /api/agents no existir,
-    // mas o ideal  o endpoint de lista de agentes.
-    const response = await fetch(`${org.openclaw_url}/api/oracle`, {
-      method: 'GET', // Assumindo que o dashboard master exibe o ranking via GET
+    const response = await fetch(`${apiUrl}/api/oracle`, {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${org.openclaw_api_key}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     })
