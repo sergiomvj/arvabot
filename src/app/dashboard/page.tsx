@@ -29,8 +29,6 @@ export default async function Dashboard() {
 
   const orgId = profile.current_org_id
 
-  const orgId = profile.current_org_id
-
   // ── CONSULTAS PARALELAS PARA PERFORMANCE ──
   const [agentsCount, onlineAgents, threadsCount, recentAgents] = await Promise.all([
     prisma.agents_cache.count({ where: { organization_id: orgId } }),

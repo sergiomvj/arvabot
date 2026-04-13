@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   const ranking = await prisma.agents_cache.findMany({
     where: { organization_id: finalOrgId },
     include: { status: true },
-    orderBy: { status: { tasks_done: 'desc' } }
+    orderBy: { name: 'asc' }
   });
 
   return NextResponse.json({ oracle: oracleData, ranking });
@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
   const ranking = await prisma.agents_cache.findMany({
     where,
     include: { status: true },
-    orderBy: { status: { tasks_done: 'desc' } }
+    orderBy: { name: 'asc' }
   });
   return NextResponse.json({ ranking });
 }
