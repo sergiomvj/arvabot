@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation'
 import { updateOrganizationSettings } from '@/lib/actions/organizations'
 import { Settings, Globe, Key, Save, AlertCircle } from 'lucide-react'
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams
+}: {
+  searchParams: { success?: string }
+}) {
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect('/login')
@@ -17,9 +21,18 @@ export default async function SettingsPage() {
   if (!profile?.organization) redirect('/organizations')
 
   const org = profile.organization
+  const isSuccess = searchParams.success === 'true'
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
+      {isSuccess && (
+        <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-3 text-emerald-500 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-black">
+            <Save size={16} />
+          </div>
+          <div className="text-sm font-bold">Configurações salvas com sucesso!</div>
+        </div>
+      )}
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
           <Settings size={24} />

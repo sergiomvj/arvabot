@@ -141,5 +141,5 @@ export async function updateOrganizationSettings(formData: FormData) {
   })
 
   revalidatePath('/dashboard/settings')
-  return { success: true }
+  redirect('/dashboard/settings?success=true')
 }
