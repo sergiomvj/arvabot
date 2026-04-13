@@ -38,9 +38,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Variáveis de Runtime (Prisma precisa disso ao iniciar o server)
+# Variáveis de Runtime (Prisma e Supabase precisam disso no servidor)
 ARG DATABASE_URL
+ARG SUPABASE_URL
+ARG SUPABASE_ANON_KEY
+ARG SUPABASE_SERVICE_ROLE_KEY
+
 ENV DATABASE_URL=$DATABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
