@@ -10,7 +10,7 @@ datasource db {
 }
 
 model organizations {
-  id            String   @id @default(cuid())
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug          String   @unique
   name          String
   plan          String   @default("starter")
@@ -32,9 +32,9 @@ model organizations {
 }
 
 model organization_members {
-  id              String   @id @default(cuid())
-  organization_id String
-  user_id         String
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  user_id         String   @db.Uuid
   role            String   @default("member")
   joined_at       DateTime @default(now())
 
@@ -45,10 +45,10 @@ model organization_members {
 }
 
 model profiles {
-  id             String     @id
+  id             String     @id @db.Uuid
   full_name      String?
   avatar_url     String?
-  current_org_id String?
+  current_org_id String?    @db.Uuid
   created_at     DateTime   @default(now())
 
   organization organizations? @relation(fields: [current_org_id], references: [id])
@@ -57,8 +57,8 @@ model profiles {
 }
 
 model agents_cache {
-  id              String   @id @default(cuid())
-  organization_id String
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
   openclaw_id     String
   name            String
   role            String?
@@ -80,8 +80,8 @@ model agents_cache {
 }
 
 model agent_status {
-  id              String   @id @default(cuid())
-  organization_id String
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
   openclaw_id     String
   status          String   @default("offline")
   last_seen       DateTime?
@@ -97,13 +97,13 @@ model agent_status {
 }
 
 model invitations {
-  id              String   @id @default(cuid())
-  organization_id String
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
   email           String
   role            String   @default("member")
   token           String   @unique
   expires_at      DateTime @default(now())
-  created_by      String?
+  created_by      String?  @db.Uuid
   accepted_at     DateTime?
   created_at      DateTime @default(now())
 
@@ -113,8 +113,8 @@ model invitations {
 }
 
 model agent_threads {
-  id              String   @id @default(cuid())
-  organization_id String
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
   agent_id        String
   user_identifier String
   theme           String
