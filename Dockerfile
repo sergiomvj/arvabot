@@ -15,11 +15,12 @@ ARG SUPABASE_URL
 ARG SUPABASE_ANON_KEY
 ARG SUPABASE_SERVICE_ROLE_KEY
 
-ENV DATABASE_URL=${DATABASE_URL}
-ENV DIRECT_URL=${DIRECT_URL}
-ENV NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-ENV SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+# Variáveis de Build
+ENV DATABASE_URL=$DATABASE_URL
+ENV DIRECT_URL=$DIRECT_URL
+ENV NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+ENV SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma/
@@ -33,16 +34,25 @@ RUN npm run build
 FROM node:20-alpine AS runner
 RUN apk add --no-cache openssl
 WORKDIR /app
-ENV NODE_ENV production
+
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Variáveis de Runtime (Prisma precisa disso ao iniciar o server)
+ARG DATABASE_URL
+ENV DATABASE_URL=$DATABASE_URL
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma/client ./node_modules/.prisma/client
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=builder --chown=nextjs:nodejs /app/prisma/schema.prisma ./prisma/schema.prisma
+
 USER nextjs
 EXPOSE 3000
-ENV PORT 3000
+
 CMD ["node", "server.js"]
