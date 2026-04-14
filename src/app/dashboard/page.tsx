@@ -1,11 +1,12 @@
-import { prisma } from "@/lib/prisma"
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
-import { Users, Activity, Clock, Globe, MessageSquare } from 'lucide-react'
+import { redirect } from 'next/navigation'
+import { Activity, Clock, Globe, MessageSquare, Users } from 'lucide-react'
+
+import { prisma } from '@/lib/prisma'
+import { getViewerContext } from '@/lib/viewer-context'
 
 export const dynamic = 'force-dynamic'
 
-function StatCard({ label, value, sub, color }: { label: string, value: any, sub: string, color: string }) {
+function StatCard({ label, value, sub, color }: { label: string; value: React.ReactNode; sub: string; color: string }) {
   return (
     <div className="bg-[#0C0F1A] border border-white/7 rounded-xl p-4 relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: color }} />
@@ -17,66 +18,46 @@ function StatCard({ label, value, sub, color }: { label: string, value: any, sub
 }
 
 export default async function Dashboard() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) redirect('/login')
+  const viewer = await getViewerContext()
+  if (!viewer) redirect('/login')
+  if (!viewer.currentOrgId) redirect('/organizations')
 
-  const profile = await prisma.profiles.findUnique({
-    where: { id: session.user.id }
-  })
+  const orgId = viewer.currentOrgId
 
-  if (!profile?.current_org_id) redirect('/organizations')
-
-  const orgId = profile.current_org_id
-
-  // ── CONSULTAS PARALELAS PARA PERFORMANCE ──
   const [agentsCount, onlineAgents, threadsCount, recentAgents] = await Promise.all([
     prisma.agents_cache.count({ where: { organization_id: orgId } }),
     prisma.agent_status.count({ where: { organization_id: orgId, status: 'online' } }),
     prisma.agent_threads.count({ where: { organization_id: orgId, status: 'active' } }),
     prisma.agents_cache.findMany({
       where: { organization_id: orgId },
-      include: { status: true },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        color: true,
+        status: {
+          select: {
+            status: true,
+          },
+        },
+      },
       take: 5,
-      orderBy: { last_synced_at: 'desc' }
-    })
+      orderBy: { last_synced_at: 'desc' },
+    }),
   ])
 
-  // Mocking heartbeat for UI consistency
   const nextHeartbeat = 2
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      {/* ── STATS BAR ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard 
-          label="Agentes Ativos" 
-          value={onlineAgents} 
-          sub={`${agentsCount} neste workspace`} 
-          color="#10B981" 
-        />
-        <StatCard 
-          label="Tarefas Ativas" 
-          value="—" 
-          sub="carregando métricas..." 
-          color="#6366F1" 
-        />
-        <StatCard 
-          label="Threads Ativas" 
-          value={threadsCount} 
-          sub="sessões bridge coletadas" 
-          color="#F59E0B" 
-        />
-        <StatCard 
-          label="Próximo Heartbeat" 
-          value={nextHeartbeat} 
-          sub="minutos para varredura" 
-          color="#06B6D4" 
-        />
+        <StatCard label="Agentes Ativos" value={onlineAgents} sub={`${agentsCount} neste workspace`} color="#10B981" />
+        <StatCard label="Tarefas Ativas" value="-" sub="carregando metricas..." color="#6366F1" />
+        <StatCard label="Threads Ativas" value={threadsCount} sub="sessoes bridge coletadas" color="#F59E0B" />
+        <StatCard label="Proximo Heartbeat" value={nextHeartbeat} sub="minutos para varredura" color="#06B6D4" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* ── AGENTS PANEL ── */}
         <div className="lg:col-span-2 bg-[#0C0F1A] border border-white/7 rounded-2xl p-6 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xs font-bold text-[#8892b0] uppercase tracking-[0.15em] font-mono flex items-center gap-2">
@@ -86,18 +67,18 @@ export default async function Dashboard() {
           <div className="space-y-3">
             {recentAgents.length === 0 ? (
               <div className="py-10 text-center border border-dashed border-white/5 rounded-xl">
-                 <p className="text-[10px] text-[#4a5580] uppercase tracking-widest font-mono">Nenhum agente sincronizado</p>
+                <p className="text-[10px] text-[#4a5580] uppercase tracking-widest font-mono">Nenhum agente sincronizado</p>
               </div>
             ) : (
-              recentAgents.map(agent => (
+              recentAgents.map((agent) => (
                 <div key={agent.id} className="bg-[#07090F] border border-white/5 rounded-xl p-4 flex items-center justify-between hover:border-emerald-500/30 transition-all cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold border"
-                      style={{ 
-                        backgroundColor: `${agent.color || '#10B981'}20`, 
+                      style={{
+                        backgroundColor: `${agent.color || '#10B981'}20`,
                         color: agent.color || '#10B981',
-                        borderColor: `${agent.color || '#10B981'}40`
+                        borderColor: `${agent.color || '#10B981'}40`,
                       }}
                     >
                       {agent.name.charAt(0)}
@@ -114,14 +95,13 @@ export default async function Dashboard() {
                 </div>
               ))
             )}
-            
+
             <div className="bg-[#07090F] border border-white/5 rounded-xl p-4 flex items-center justify-center opacity-40">
-              <p className="text-[10px] text-[#4a5580] uppercase tracking-widest font-mono">Sincronização em tempo real ativa</p>
+              <p className="text-[10px] text-[#4a5580] uppercase tracking-widest font-mono">Sincronizacao em tempo real ativa</p>
             </div>
           </div>
         </div>
 
-        {/* ── ACTIVITY PANEL ── */}
         <div className="lg:col-span-1 bg-[#0C0F1A] border border-white/7 rounded-2xl p-6 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xs font-bold text-[#8892b0] uppercase tracking-[0.15em] font-mono flex items-center gap-2">
@@ -130,14 +110,14 @@ export default async function Dashboard() {
           </div>
           <div className="space-y-6 relative overflow-hidden">
             <div className="absolute left-[15px] top-4 bottom-4 w-px bg-white/5" />
-            
+
             <div className="relative flex gap-4 pl-1">
               <div className="w-8 h-8 rounded-full bg-[#07090F] border border-white/10 flex items-center justify-center text-[#4a5580] z-10 flex-shrink-0">
                 <Globe size={14} />
               </div>
               <div>
-                <div className="text-xs font-semibold text-white">Sincronização Hub</div>
-                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Sincronização configurada p/ workspace atual</div>
+                <div className="text-xs font-semibold text-white">Sincronizacao Hub</div>
+                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Sincronizacao configurada para o workspace atual</div>
                 <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Status Atualizado</div>
               </div>
             </div>
@@ -159,7 +139,7 @@ export default async function Dashboard() {
               </div>
               <div>
                 <div className="text-xs font-semibold text-[#8892b0]">Sistema Online</div>
-                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Módulo Multi-tenant isolado por organização</div>
+                <div className="text-[10px] text-[#4a5580] mt-0.5 tracking-tight font-medium">Modulo multi-tenant isolado por organizacao</div>
                 <div className="text-[9px] text-[#4a5580] mt-1 font-mono uppercase">Online</div>
               </div>
             </div>

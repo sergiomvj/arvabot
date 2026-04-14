@@ -1,74 +1,337 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server'
+
+import { prisma } from '@/lib/prisma'
+import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-async function getOrgContext(req: NextRequest) {
-  // 1. Tentar autenticação via Bearer Token (Service Role)
-  const authHeader = req.headers.get('Authorization');
+const ORACLE_TIMEOUT_MS = 60000
+
+type OrgContext =
+  | {
+      orgId: string
+      reviewedBy: string
+    }
+  | {
+      orgId: 'SERVICE_ROLE_ADMIN'
+      reviewedBy: 'service-role'
+    }
+
+function normalizeBaseUrl(baseUrl: string) {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '')
+
+  if (!trimmed) return trimmed
+
+  try {
+    const url = new URL(trimmed)
+    if (url.pathname.startsWith('/api/')) {
+      return url.origin
+    }
+
+    return `${url.origin}${url.pathname === '/' ? '' : url.pathname}`
+  } catch {
+    return trimmed
+  }
+}
+
+async function getOrgContext(req: NextRequest): Promise<OrgContext | null> {
+  const authHeader = req.headers.get('Authorization')
   if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.slice('Bearer '.length)
+
     if (token === process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      // Se for Service Role, permitimos acesso global ou por orgId via query param
-      const { searchParams } = new URL(req.url);
-      const targetOrgId = searchParams.get('orgId');
-      return targetOrgId || 'SERVICE_ROLE_ADMIN';
+      const targetOrgId = req.nextUrl.searchParams.get('orgId')
+      if (!targetOrgId) {
+        return {
+          orgId: 'SERVICE_ROLE_ADMIN',
+          reviewedBy: 'service-role',
+        }
+      }
+
+      return {
+        orgId: targetOrgId,
+        reviewedBy: 'service-role',
+      }
     }
   }
 
-  // 2. Fallback para autenticação via Cookie (Sessão de Usuário)
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return null;
+  const supabase = createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) return null
 
   const profile = await prisma.profiles.findUnique({
-    where: { id: session.user.id }
-  });
-  return profile?.current_org_id || null;
+    where: { id: session.user.id },
+    select: { current_org_id: true },
+  })
+
+  if (!profile?.current_org_id) return null
+
+  return {
+    orgId: profile.current_org_id,
+    reviewedBy: session.user.email || session.user.id,
+  }
 }
 
-export async function POST(req: NextRequest) {
-  const orgId = await getOrgContext(req);
-  if (!orgId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+async function getOrganizationConfig(orgId: string) {
+  const organization = await prisma.organizations.findUnique({
+    where: { id: orgId },
+    select: {
+      id: true,
+      openclaw_url: true,
+      openclaw_api_key: true,
+    },
+  })
 
-  const { agentId, message } = await req.json();
-
-  // Se for Service Role Admin e não informou orgId, usamos a primeira encontrada ou bloqueamos
-  let finalOrgId = orgId;
-  if (orgId === 'SERVICE_ROLE_ADMIN') {
-    return NextResponse.json({ error: 'orgId obrigatório para POST via Service Role' }, { status: 400 });
+  if (!organization) {
+    return { error: 'Organizacao nao encontrada.' } as const
   }
 
-  // ORACLE OpenClaw endpoint
-  const oracleRes = await fetch('https://dashboard.fbrapps.com/api/oracle', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ agentId, message })
-  });
-  const oracleData = await oracleRes.json();
+  const apiUrl = organization.openclaw_url || process.env.OPENCLAW_API_URL
+  const apiKey = organization.openclaw_api_key || process.env.OPENCLAW_API_KEY
 
-  // Ranking from Prisma - filtrado por org
-  const ranking = await prisma.agents_cache.findMany({
-    where: { organization_id: finalOrgId },
-    include: { status: true },
-    orderBy: { name: 'asc' }
-  });
+  if (!apiUrl) {
+    return { error: 'URL do OpenClaw nao configurada.' } as const
+  }
 
-  return NextResponse.json({ oracle: oracleData, ranking });
+  if (!apiKey) {
+    return { error: 'API key do OpenClaw nao configurada.' } as const
+  }
+
+  return {
+    apiUrl: normalizeBaseUrl(apiUrl),
+    apiKey,
+  } as const
+}
+
+async function callOpenClaw(
+  baseUrl: string,
+  apiKey: string,
+  pathname: string,
+  init?: RequestInit
+) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), ORACLE_TIMEOUT_MS)
+
+  try {
+    const url = new URL(pathname, `${baseUrl}/`)
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `ApiKey ${apiKey}`,
+        ...(init?.headers || {}),
+      },
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+
+    const text = await response.text()
+    let payload: unknown = null
+
+    if (text) {
+      try {
+        payload = JSON.parse(text)
+      } catch {
+        payload = { raw: text }
+      }
+    }
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      payload,
+    }
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+function buildOracleError(status: number, payload: unknown, fallbackMessage: string) {
+  const payloadMessage =
+    typeof payload === 'object' && payload && 'error' in payload && typeof payload.error === 'string'
+      ? payload.error
+      : typeof payload === 'object' && payload && 'raw' in payload && typeof payload.raw === 'string'
+        ? payload.raw
+        : fallbackMessage
+
+  return NextResponse.json(
+    {
+      error: fallbackMessage,
+      details: payloadMessage,
+    },
+    { status }
+  )
 }
 
 export async function GET(req: NextRequest) {
-  const context = await getOrgContext(req);
-  if (!context) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+  const context = await getOrgContext(req)
+  if (!context) {
+    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+  }
 
-  // Se for Service Role mas não tiver Org específica, retornamos o ranking de TODAS (Bulk Sync)
-  const where = context === 'SERVICE_ROLE_ADMIN' ? {} : { organization_id: context };
+  if (context.orgId === 'SERVICE_ROLE_ADMIN') {
+    return NextResponse.json({ error: 'orgId obrigatorio para GET via Service Role' }, { status: 400 })
+  }
 
-  const ranking = await prisma.agents_cache.findMany({
-    where,
-    include: { status: true },
-    orderBy: { name: 'asc' }
-  });
-  return NextResponse.json({ ranking });
+  const config = await getOrganizationConfig(context.orgId)
+  if ('error' in config) {
+    return NextResponse.json({ error: config.error }, { status: 400 })
+  }
+
+  const recommendationStatus = req.nextUrl.searchParams.get('status') || 'pending'
+  const [ranking, recommendations, history] = await Promise.allSettled([
+    prisma.agents_cache.findMany({
+      where: { organization_id: context.orgId },
+      select: {
+        openclaw_id: true,
+        name: true,
+        role: true,
+        color: true,
+        status: {
+          select: {
+            status: true,
+            tasks_done: true,
+            tasks_pending: true,
+            updated_at: true,
+          },
+        },
+      },
+      orderBy: [{ status: { tasks_done: 'desc' } }, { name: 'asc' }],
+    }),
+    callOpenClaw(
+      config.apiUrl,
+      config.apiKey,
+      `/api/oracle/recommendations?status=${encodeURIComponent(recommendationStatus)}`
+    ),
+    callOpenClaw(config.apiUrl, config.apiKey, '/api/oracle/history?limit=10'),
+  ])
+
+  const recommendationPayload =
+    recommendations.status === 'fulfilled' && recommendations.value.ok
+      ? recommendations.value.payload
+      : null
+
+  const historyPayload = history.status === 'fulfilled' && history.value.ok ? history.value.payload : null
+
+  return NextResponse.json({
+    ranking: ranking.status === 'fulfilled' ? ranking.value : [],
+    recommendations:
+      recommendationPayload && typeof recommendationPayload === 'object' && 'recommendations' in recommendationPayload
+        ? recommendationPayload.recommendations
+        : [],
+    history:
+      historyPayload && typeof historyPayload === 'object' && 'history' in historyPayload ? historyPayload.history : [],
+  })
+}
+
+export async function POST(req: NextRequest) {
+  const context = await getOrgContext(req)
+  if (!context) {
+    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+  }
+
+  if (context.orgId === 'SERVICE_ROLE_ADMIN') {
+    return NextResponse.json({ error: 'orgId obrigatorio para POST via Service Role' }, { status: 400 })
+  }
+
+  const config = await getOrganizationConfig(context.orgId)
+  if ('error' in config) {
+    return NextResponse.json({ error: config.error }, { status: 400 })
+  }
+
+  const body = await req.json().catch(() => null)
+  const mode = body?.mode === 'ranking' ? 'ranking' : 'custom'
+
+  if (mode === 'custom') {
+    const question = typeof body?.question === 'string' ? body.question.trim() : ''
+    const freeContext = typeof body?.context === 'string' ? body.context.trim() : ''
+    const agentId = typeof body?.agentId === 'string' ? body.agentId.trim() : ''
+
+    if (!question) {
+      return NextResponse.json({ error: 'Pergunta obrigatoria.' }, { status: 400 })
+    }
+
+    const upstream = await callOpenClaw(config.apiUrl, config.apiKey, '/api/oracle/custom', {
+      method: 'POST',
+      body: JSON.stringify({
+        question,
+        context: freeContext,
+        agent_id: agentId || undefined,
+      }),
+    })
+
+    if (!upstream.ok) {
+      return buildOracleError(upstream.status, upstream.payload, 'Falha ao consultar o ORACLE.')
+    }
+
+    return NextResponse.json(upstream.payload)
+  }
+
+  const periodDays =
+    typeof body?.periodDays === 'number'
+      ? body.periodDays
+      : Number.parseInt(typeof body?.periodDays === 'string' ? body.periodDays : '7', 10)
+
+  const freeContext = typeof body?.context === 'string' ? body.context.trim() : ''
+
+  const upstream = await callOpenClaw(config.apiUrl, config.apiKey, '/api/oracle/ranking', {
+    method: 'POST',
+    body: JSON.stringify({
+      period_days: Number.isFinite(periodDays) ? periodDays : 7,
+      context: freeContext || undefined,
+      triggered_by: context.reviewedBy,
+    }),
+  })
+
+  if (!upstream.ok) {
+    return buildOracleError(upstream.status, upstream.payload, 'Falha ao gerar ranking no ORACLE.')
+  }
+
+  return NextResponse.json(upstream.payload)
+}
+
+export async function PUT(req: NextRequest) {
+  const context = await getOrgContext(req)
+  if (!context) {
+    return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+  }
+
+  if (context.orgId === 'SERVICE_ROLE_ADMIN') {
+    return NextResponse.json({ error: 'orgId obrigatorio para PUT via Service Role' }, { status: 400 })
+  }
+
+  const config = await getOrganizationConfig(context.orgId)
+  if ('error' in config) {
+    return NextResponse.json({ error: config.error }, { status: 400 })
+  }
+
+  const body = await req.json().catch(() => null)
+  const recommendationId = typeof body?.recommendationId === 'number' ? body.recommendationId : Number(body?.recommendationId)
+  const status = body?.status === 'rejected' ? 'rejected' : body?.status === 'approved' ? 'approved' : null
+
+  if (!recommendationId || !status) {
+    return NextResponse.json({ error: 'recommendationId e status sao obrigatorios.' }, { status: 400 })
+  }
+
+  const upstream = await callOpenClaw(
+    config.apiUrl,
+    config.apiKey,
+    `/api/oracle/recommendations/${recommendationId}/review`,
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        status,
+        reviewed_by: context.reviewedBy,
+      }),
+    }
+  )
+
+  if (!upstream.ok) {
+    return buildOracleError(upstream.status, upstream.payload, 'Falha ao revisar recomendacao.')
+  }
+
+  return NextResponse.json(upstream.payload)
 }

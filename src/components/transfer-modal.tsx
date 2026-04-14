@@ -1,7 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { startTransition, useState } from 'react'
 import { Move, X } from 'lucide-react'
+
 import { transferAgent } from '@/lib/actions/agents'
 
 interface TransferModalProps {
@@ -12,23 +14,29 @@ interface TransferModalProps {
 }
 
 export function TransferModal({ agent, organizations, currentOrgId, onClose }: TransferModalProps) {
+  const router = useRouter()
   const [targetId, setTargetId] = useState('')
   const [loading, setLoading] = useState(false)
-  
-  const otherOrgs = organizations.filter(org => org.id !== currentOrgId)
+
+  const otherOrgs = organizations.filter((org) => org.id !== currentOrgId)
 
   async function handleTransfer() {
     if (!targetId) return
+
     setLoading(true)
+
     try {
       const result = await transferAgent(agent.id, targetId)
       if (result.success) {
         alert('Agente transferido com sucesso!')
-        window.location.reload()
+        onClose()
+        startTransition(() => {
+          router.refresh()
+        })
       } else {
         alert(`Erro: ${result.error}`)
       }
-    } catch (error) {
+    } catch {
       alert('Erro ao transferir agente.')
     } finally {
       setLoading(false)
@@ -47,7 +55,7 @@ export function TransferModal({ agent, organizations, currentOrgId, onClose }: T
             <X size={20} />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-3 p-3 bg-[#07090F] border border-white/5 rounded-xl">
             <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20 font-bold">
@@ -61,36 +69,29 @@ export function TransferModal({ agent, organizations, currentOrgId, onClose }: T
 
           <div className="space-y-2">
             <label className="block text-[10px] uppercase tracking-widest text-[#8892b0] font-mono font-bold">Empresa de Destino</label>
-            <select 
+            <select
               value={targetId}
               onChange={(e) => setTargetId(e.target.value)}
               className="w-full bg-[#07090F] border border-white/10 rounded-xl p-3 text-sm text-white focus:border-emerald-500/50 outline-none transition-all"
             >
               <option value="">Selecione uma empresa...</option>
-              {otherOrgs.map(org => (
-                <option key={org.id} value={org.id}>{org.name}</option>
+              {otherOrgs.map((org) => (
+                <option key={org.id} value={org.id}>
+                  {org.name}
+                </option>
               ))}
             </select>
           </div>
 
           {otherOrgs.length === 0 && (
-            <p className="text-[10px] text-amber-500/70 italic">
-              Você não possui outras empresas cadastradas para realizar a transferência.
-            </p>
+            <p className="text-[10px] text-amber-500/70 italic">Voce nao possui outras empresas cadastradas para realizar a transferencia.</p>
           )}
 
           <div className="pt-4 flex gap-3">
-            <button 
-              onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-xl border border-white/5 text-xs font-bold text-[#8892b0] hover:bg-white/5 transition-all"
-            >
+            <button onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-white/5 text-xs font-bold text-[#8892b0] hover:bg-white/5 transition-all">
               Cancelar
             </button>
-            <button 
-              onClick={handleTransfer}
-              disabled={loading || !targetId}
-              className="flex-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/10"
-            >
+            <button onClick={handleTransfer} disabled={loading || !targetId} className="flex-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-xs font-bold disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/10">
               {loading ? 'Transferindo...' : 'Confirmar'}
             </button>
           </div>

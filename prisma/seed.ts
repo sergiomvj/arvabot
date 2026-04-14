@@ -57,7 +57,7 @@ async function main() {
       create: {
         organization_id: facebrasil.id,
         ...agent,
-        skills: null,
+        skills: [],
         metadata: JSON.stringify({ model: 'openrouter/qwen/qwen3.5-plus-02-15' }),
       }
     })

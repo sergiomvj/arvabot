@@ -1,25 +1,19 @@
-import { prisma } from '@/lib/prisma';
-import { createClient } from "@/lib/supabase/server"
-import { redirect } from "next/navigation"
+import { redirect } from 'next/navigation'
+
+import { prisma } from '@/lib/prisma'
+import { getViewerContext } from '@/lib/viewer-context'
 
 export const dynamic = 'force-dynamic'
 
 export default async function TasksPage() {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
-
-  if (!session) redirect('/login')
-
-  const profile = await prisma.profiles.findUnique({
-    where: { id: session.user.id }
-  })
-
-  if (!profile?.current_org_id) redirect('/organizations')
+  const viewer = await getViewerContext()
+  if (!viewer) redirect('/login')
+  if (!viewer.currentOrgId) redirect('/organizations')
 
   const tasks = await prisma.agent_status.findMany({
-    where: { agent: { organization_id: profile.current_org_id } },
-    include: { agent: true }
-  });
+    where: { agent: { organization_id: viewer.currentOrgId } },
+    include: { agent: true },
+  })
 
   return (
     <div className="p-5">
@@ -40,5 +34,5 @@ export default async function TasksPage() {
         )}
       </div>
     </div>
-  );
+  )
 }

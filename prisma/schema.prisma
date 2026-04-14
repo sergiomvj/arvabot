@@ -41,6 +41,7 @@ model organization_members {
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, user_id])
+  @@index([user_id])
   @@map("organization_members")
 }
 
@@ -53,6 +54,7 @@ model profiles {
 
   organization organizations? @relation(fields: [current_org_id], references: [id])
 
+  @@index([current_org_id])
   @@map("profiles")
 }
 
@@ -76,6 +78,8 @@ model agents_cache {
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, openclaw_id])
+  @@index([organization_id, active])
+  @@index([organization_id, last_synced_at])
   @@map("agents_cache")
 }
 
@@ -93,6 +97,8 @@ model agent_status {
   agent        agents_cache? @relation("AgentToStatus")
 
   @@unique([organization_id, openclaw_id])
+  @@index([organization_id, status])
+  @@index([organization_id, updated_at])
   @@map("agent_status")
 }
 
@@ -109,6 +115,8 @@ model invitations {
 
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
+  @@index([organization_id, email])
+  @@index([expires_at])
   @@map("invitations")
 }
 
@@ -127,5 +135,8 @@ model agent_threads {
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   agent        agents_cache @relation(fields: [organization_id, agent_id], references: [organization_id, openclaw_id], onDelete: Cascade)
 
+  @@index([organization_id, agent_id, user_identifier, status, last_interaction])
+  @@index([organization_id, agent_id, status, last_interaction])
+  @@index([organization_id, status, last_interaction])
   @@map("agent_threads")
 }

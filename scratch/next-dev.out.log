@@ -1,0 +1,38 @@
+
+> arvabots@0.1.0 dev
+> next dev
+
+   ▲ Next.js 14.1.4
+   - Local:        http://localhost:3000
+   - Environments: .env.local, .env
+
+ ✓ Ready in 2.1s
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 970ms (122 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 3.6s (710 modules)
+ ✓ Compiled in 355ms (259 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 3.5s (814 modules)
+ ✓ Compiled /dashboard/agents in 488ms (846 modules)
+ ✓ Compiled /not-found in 272ms (850 modules)
+ ✓ Compiled /dashboard/settings in 332ms (882 modules)
+ ✓ Compiled /dashboard in 436ms (823 modules)
+   Reload env: .env
+ ✓ Compiled in 691ms (955 modules)
+ ✓ Compiled /not-found in 172ms (823 modules)
+ ✓ Compiled in 633ms (955 modules)
+ ✓ Compiled in 119ms (335 modules)
+ ✓ Compiled in 167ms (941 modules)
+ ✓ Compiled in 116ms (335 modules)
+ ✓ Compiled in 143ms (941 modules)
+ ✓ Compiled in 440ms (941 modules)
+ ✓ Compiled in 221ms (335 modules)
+ ✓ Compiled in 143ms (335 modules)
+ ✓ Compiled in 144ms (335 modules)
+ ✓ Compiled in 160ms (335 modules)
+ ✓ Compiled in 103ms (498 modules)
+ ✓ Compiled in 156ms (335 modules)
+ ✓ Compiled in 268ms (833 modules)
+ ✓ Compiled in 189ms (498 modules)
+ ✓ Compiled in 160ms (498 modules)
