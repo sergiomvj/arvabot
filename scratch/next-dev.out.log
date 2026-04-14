@@ -36,3 +36,10 @@
  ✓ Compiled in 268ms (833 modules)
  ✓ Compiled in 189ms (498 modules)
  ✓ Compiled in 160ms (498 modules)
+ ✓ Compiled / in 149ms (500 modules)
+ ✓ Compiled /not-found in 260ms (839 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 585ms (565 modules)
+ ✓ Compiled /api/oracle in 274ms (526 modules)
+ ✓ Compiled in 330ms (833 modules)
+ ✓ Compiled /api/oracle in 130ms (526 modules)

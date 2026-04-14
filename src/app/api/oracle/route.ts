@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-const ORACLE_TIMEOUT_MS = 60000
+const ORACLE_TIMEOUT_MS = 90000
 
 type OrgContext =
   | {
@@ -144,6 +144,18 @@ async function callOpenClaw(
       status: response.status,
       payload,
     }
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      return {
+        ok: false,
+        status: 504,
+        payload: {
+          error: `Tempo limite excedido ao aguardar resposta do OpenClaw em ${pathname}.`,
+        },
+      }
+    }
+
+    throw error
   } finally {
     clearTimeout(timeout)
   }
