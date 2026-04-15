@@ -34,6 +34,7 @@ model organizations {
   squad_checkpoints  squad_checkpoints[]
   architect_suggestions architect_suggestions[]
   browser_sessions   browser_sessions[]
+  projects           project[]
 
   @@map("organizations")
 }
@@ -78,11 +79,20 @@ model agents_cache {
   skills          String[]
   last_synced_at  DateTime?
   metadata        Json?
+  
+  // Novos campos para integração com rankings/tasks
+  owningTeamId      String?  @db.Uuid
+  primaryFunctionId String?  @db.Uuid
 
   status          agent_status? @relation("AgentToStatus", fields: [organization_id, openclaw_id], references: [organization_id, openclaw_id])
   threads         agent_threads[]
   squad_steps     squad_steps[]
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  
+  scorecards      period_scorecard[]
+  badge_awards    badge_award[]
+  consequences    consequence_event[]
+  task_executions task_execution[]
 
   @@unique([organization_id, openclaw_id])
   @@index([organization_id, active])
@@ -348,6 +358,168 @@ model architect_suggestions {
 
   @@index([organization_id, created_at])
   @@map("architect_suggestions")
+}
+
+model project {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?  @db.Text
+  documentation   String?  @db.Text
+  status          String   @default("active")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  organization    organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  tasks           project_task[]
+
+  @@index([organization_id, status])
+  @@map("projects")
+}
+
+model project_task {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id      String   @db.Uuid
+  title           String
+  description     String?  @db.Text
+  status          String   @default("backlog")
+  criticality     String   @default("medium")
+  complexity      String   @default("standard")
+  assigned_agent_id String? @db.Uuid
+  sequence        Int      @default(0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  project         project  @relation(fields: [project_id], references: [id], onDelete: Cascade)
+
+  @@index([project_id, status])
+  @@map("project_tasks")
+}
+
+model evaluation_period {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String   @unique
+  periodType      String
+  startsAt        DateTime
+  endsAt          DateTime
+  isClosed        Boolean  @default(false)
+  closedAt        DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  scorecards      period_scorecard[]
+
+  @@map("evaluation_periods")
+}
+
+model period_scorecard {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  periodId        String   @db.Uuid
+  agentId         String   @db.Uuid
+  scoreValue      Decimal  @db.Decimal(10, 2)
+  scoreStatus     String
+  sampleSize      Int
+  confidenceIndex Decimal  @db.Decimal(5, 2)
+  rankPosition    Int?
+  trendDelta      Decimal? @db.Decimal(5, 2)
+  operationalBand String
+  explanation     Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  period          evaluation_period @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  agent           agents_cache      @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([periodId, agentId])
+  @@map("period_scorecards")
+}
+
+model badge {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String   @db.Text
+  badgeCategory   String
+  createdAt       DateTime @default(now())
+
+  awards          badge_award[]
+
+  @@map("badges")
+}
+
+model badge_award {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  badgeId         String   @db.Uuid
+  agentId         String   @db.Uuid
+  awardedAt       DateTime @default(now())
+
+  badge           badge        @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  agent           agents_cache @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("badge_awards")
+}
+
+model ranking_rule {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String   @unique
+  name            String
+  actionType      String
+  createdAt       DateTime @default(now())
+
+  consequences    consequence_event[]
+
+  @@map("ranking_rules")
+}
+
+model consequence_event {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId         String   @db.Uuid
+  ruleId          String   @db.Uuid
+  status          String
+  triggeredAt     DateTime @default(now())
+
+  agent           agents_cache @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  rule            ranking_rule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@map("consequence_events")
+}
+
+model task_execution {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  agentId         String   @db.Uuid
+  taskTypeId      String   @db.Uuid
+  startedAt       DateTime
+  completedAt     DateTime?
+  executionStatus String
+  scoreRaw        Decimal? @db.Decimal(10, 2)
+  scoreFinal      Decimal? @db.Decimal(10, 2)
+
+  agent           agents_cache @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  task_type       task_type    @relation(fields: [taskTypeId], references: [id], onDelete: Cascade)
+
+  @@index([agentId, startedAt])
+  @@map("task_executions")
+}
+
+model task_type {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String   @unique
+  name            String
+  createdAt       DateTime @default(now())
+
+  executions      task_execution[]
+
+  @@map("task_types")
+}
+
+model function_catalog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  description     String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@map("function_catalog")
 }
 
 model browser_sessions {
