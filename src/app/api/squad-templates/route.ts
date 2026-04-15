@@ -59,6 +59,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Template nao encontrado' }, { status: 404 })
   }
 
+  const availableAgents = await prisma.agents_cache.findMany({
+    where: {
+      organization_id: context.orgId,
+      active: true,
+    },
+    select: {
+      openclaw_id: true,
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  if (availableAgents.length === 0) {
+    return NextResponse.json({ error: 'A organizacao nao possui agentes ativos para montar o squad' }, { status: 422 })
+  }
+
   const slugBase = slugify(typeof body?.name === 'string' ? body.name : template.name)
   let slug = slugBase
   let suffix = 1
@@ -89,7 +104,9 @@ export async function POST(req: NextRequest) {
       steps: {
         create: template.steps.map((step) => ({
           organization_id: context.orgId,
-          agent_id: step.agent_id,
+          agent_id: availableAgents.some((agent) => agent.openclaw_id === step.agent_id)
+            ? step.agent_id
+            : availableAgents[(step.order - 1) % availableAgents.length]?.openclaw_id ?? availableAgents[0].openclaw_id,
           order: step.order,
           title: step.title,
           instructions: step.instructions,

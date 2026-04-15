@@ -11,10 +11,9 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   try {
-    // 1. Validar contexto do usuário (tenancy)
-    const context = await getViewerContext()
-    if (!context || !context.currentOrgId) {
-      return NextResponse.json({ error: 'Não autorizado ou organização não selecionada' }, { status: 401 })
+    const context = await getCurrentOrganizationContext()
+    if (!context) {
+      return NextResponse.json({ error: 'Nao autorizado ou organizacao nao selecionada' }, { status: 401 })
     }
 
     const body = await req.json().catch(() => null)
@@ -30,7 +29,7 @@ export async function POST(
       return NextResponse.json({ error: 'Checkpoint nao encontrado' }, { status: 404 })
     }
 
-    if (checkpoint.organization_id !== context.currentOrgId) {
+    if (checkpoint.organization_id !== context.orgId) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 

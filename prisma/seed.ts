@@ -135,6 +135,17 @@ async function main() {
         { order: 2, agent_id: 'chiara', title: 'Sintese', instructions: 'Transforme a investigacao em briefing claro com padroes e recomendacoes.', skill_code: 'oracle-analysis' },
       ],
     },
+    {
+      key: 'video-to-carousel',
+      name: 'Video para Carrossel',
+      description: 'Transforma um video base em carrossel com checkpoints nas etapas-chave.',
+      category: 'content-refactor',
+      steps: [
+        { order: 1, agent_id: 'david', title: 'Extracao de estrutura', instructions: 'Extraia a estrutura principal, ganchos, promessas e CTA do video base.', checkpoint_required: true },
+        { order: 2, agent_id: 'chiara', title: 'Roteiro em slides', instructions: 'Transforme a estrutura em roteiro de carrossel com abertura, desenvolvimento e fechamento.' },
+        { order: 3, agent_id: 'lia', title: 'Briefing visual', instructions: 'Converta o roteiro em instrucoes visuais para design e consistencia de identidade.', checkpoint_required: true, skill_code: 'canva-generate' },
+      ],
+    },
   ]
 
   for (const template of templates) {

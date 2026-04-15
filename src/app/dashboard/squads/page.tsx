@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Layers3, Sparkles } from 'lucide-react'
 
+import { AgentLibrary } from '@/components/squads/agent-library'
 import { ArchitectStudio } from '@/components/squads/architect-studio'
 import { CreateFromTemplateButton, RunSquadButton } from '@/components/squads/squad-buttons'
 import { prisma } from '@/lib/prisma'
@@ -14,7 +15,7 @@ export default async function SquadsPage() {
   if (!viewer) redirect('/login')
   if (!viewer.currentOrgId) redirect('/organizations')
 
-  const [squads, templates] = await Promise.all([
+  const [squads, templates, agents] = await Promise.all([
     prisma.squads.findMany({
       where: { organization_id: viewer.currentOrgId },
       include: {
@@ -29,6 +30,27 @@ export default async function SquadsPage() {
         OR: [{ organization_id: null }, { organization_id: viewer.currentOrgId }],
       },
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    }),
+    prisma.agents_cache.findMany({
+      where: {
+        organization_id: viewer.currentOrgId,
+        active: true,
+      },
+      select: {
+        openclaw_id: true,
+        name: true,
+        role: true,
+        skills: true,
+        color: true,
+        status: {
+          select: {
+            status: true,
+            tasks_done: true,
+            tasks_pending: true,
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
     }),
   ])
 
@@ -63,7 +85,7 @@ export default async function SquadsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.3fr_0.7fr] gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-8">
         <div className="space-y-4">
           {squads.length === 0 ? (
             <div className="bg-[#0C0F1A] border border-dashed border-white/10 rounded-2xl p-10 text-center">
@@ -132,6 +154,25 @@ export default async function SquadsPage() {
               ))}
             </div>
           </div>
+
+          <AgentLibrary
+            agents={agents.map((agent) => ({
+              id: agent.openclaw_id,
+              name: agent.name,
+              role: agent.role || 'Agente',
+              skills: agent.skills,
+              color: agent.color,
+              suggestedUses: [
+                agent.role || 'Operação geral',
+                agent.skills.length > 0 ? `Usar quando precisar de ${agent.skills.join(', ')}` : 'Usar em etapas genéricas',
+              ],
+              status: agent.status?.status || 'offline',
+              throughput: {
+                done: agent.status?.tasks_done || 0,
+                pending: agent.status?.tasks_pending || 0,
+              },
+            }))}
+          />
         </div>
       </div>
 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { LayoutDashboard, Layers3, Puzzle, Settings, Users } from 'lucide-react'
+import { ActivitySquare, LayoutDashboard, Layers3, Puzzle, Settings, Users } from 'lucide-react'
 
 import './globals.css'
 import { OrgSwitcher } from '@/components/org-switcher'
@@ -44,6 +44,9 @@ export default async function RootLayout({
                 </Link>
                 <Link href="/dashboard/squads" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
                   <Layers3 size={16} /> Squads
+                </Link>
+                <Link href="/dashboard/runs" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
+                  <ActivitySquare size={16} /> Runs
                 </Link>
                 <Link href="/dashboard/skills" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
                   <Puzzle size={16} /> Skills
