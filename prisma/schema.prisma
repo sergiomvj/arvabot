@@ -28,6 +28,12 @@ model organizations {
   invitations        invitations[]
   agent_threads      agent_threads[]
   squads             squads[]
+  skill_bindings     organization_skill_bindings[]
+  squad_templates    squad_templates[]
+  squad_runs         squad_runs[]
+  squad_checkpoints  squad_checkpoints[]
+  architect_suggestions architect_suggestions[]
+  browser_sessions   browser_sessions[]
 
   @@map("organizations")
 }
@@ -76,7 +82,6 @@ model agents_cache {
   status          agent_status? @relation("AgentToStatus", fields: [organization_id, openclaw_id], references: [organization_id, openclaw_id])
   threads         agent_threads[]
   squad_steps     squad_steps[]
-
   organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, openclaw_id])
@@ -146,16 +151,24 @@ model agent_threads {
 model squads {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   organization_id String   @db.Uuid
+  slug            String?
   name            String
   description     String?
   architect_prompt String?  @db.Text
+  autonomy_mode   String   @default("interactive")
+  status          String   @default("draft")
+  architect_summary String? @db.Text
+  preset_key      String?
   active          Boolean  @default(true)
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
   organization   organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   steps          squad_steps[]
+  runs           squad_runs[]
 
+  @@unique([organization_id, slug])
+  @@index([organization_id, active, status])
   @@map("squads")
 }
 
@@ -166,10 +179,187 @@ model squad_steps {
   agent_id        String
   order           Int
   instructions    String   @db.Text
+  title           String?
+  step_type       String   @default("agent_task")
+  skill_code      String?
   checkpoint_required Boolean @default(false)
 
   squad           squads       @relation(fields: [squad_id], references: [id], onDelete: Cascade)
   agent           agents_cache @relation(fields: [organization_id, agent_id], references: [organization_id, openclaw_id], onDelete: Cascade)
+  run_steps       squad_run_steps[]
 
+  @@unique([squad_id, order])
+  @@index([organization_id, skill_code])
   @@map("squad_steps")
+}
+
+model squad_runs {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  squad_id        String   @db.Uuid
+  organization_id String   @db.Uuid
+  status          String   @default("queued")
+  current_step    Int?
+  started_by      String?  @db.Uuid
+  input_payload   Json?
+  output_summary  Json?
+  started_at      DateTime @default(now())
+  completed_at    DateTime?
+  failed_at       DateTime?
+  updated_at      DateTime @updatedAt
+
+  squad           squads         @relation(fields: [squad_id], references: [id], onDelete: Cascade)
+  organization    organizations  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  steps           squad_run_steps[]
+  checkpoints     squad_checkpoints[]
+
+  @@index([organization_id, status, updated_at])
+  @@index([squad_id, started_at])
+  @@map("squad_runs")
+}
+
+model squad_run_steps {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  run_id          String   @db.Uuid
+  squad_step_id   String   @db.Uuid
+  status          String   @default("pending")
+  output_text     String?  @db.Text
+  output_payload  Json?
+  handoff_summary String?  @db.Text
+  started_at      DateTime?
+  completed_at    DateTime?
+  error_message   String?  @db.Text
+  created_at      DateTime @default(now())
+
+  run             squad_runs  @relation(fields: [run_id], references: [id], onDelete: Cascade)
+  squad_step      squad_steps @relation(fields: [squad_step_id], references: [id], onDelete: Cascade)
+  checkpoints     squad_checkpoints[]
+
+  @@index([run_id, status, created_at])
+  @@index([squad_step_id])
+  @@map("squad_run_steps")
+}
+
+model squad_checkpoints {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  run_id          String   @db.Uuid
+  run_step_id     String   @db.Uuid
+  status          String   @default("open")
+  action          String?
+  feedback_text   String?  @db.Text
+  selection_payload Json?
+  resolved_by     String?  @db.Uuid
+  created_at      DateTime @default(now())
+  resolved_at     DateTime?
+
+  organization    organizations   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  run             squad_runs      @relation(fields: [run_id], references: [id], onDelete: Cascade)
+  run_step        squad_run_steps @relation(fields: [run_step_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id, status, created_at])
+  @@index([run_id, status])
+  @@map("squad_checkpoints")
+}
+
+model skill_definitions {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code            String   @unique
+  name            String
+  description     String?  @db.Text
+  type            String
+  provider        String?
+  plan_gate       String?
+  status          String   @default("active")
+  config_schema   Json?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  organization_bindings organization_skill_bindings[]
+
+  @@index([status, type])
+  @@map("skill_definitions")
+}
+
+model organization_skill_bindings {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  skill_id        String   @db.Uuid
+  status          String   @default("enabled")
+  config          Json?
+  secret_ref      String?
+  enabled_by      String?  @db.Uuid
+  enabled_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  organization    organizations   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  skill           skill_definitions @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, skill_id])
+  @@index([organization_id, status])
+  @@map("organization_skill_bindings")
+}
+
+model squad_templates {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String?  @db.Uuid
+  key             String   @unique
+  name            String
+  description     String?  @db.Text
+  category        String?
+  active          Boolean  @default(true)
+  autonomy_mode   String   @default("interactive")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  organization    organizations? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  steps           squad_template_steps[]
+
+  @@index([organization_id, active])
+  @@map("squad_templates")
+}
+
+model squad_template_steps {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  template_id     String   @db.Uuid
+  organization_id String?  @db.Uuid
+  agent_id        String
+  order           Int
+  title           String?
+  instructions    String   @db.Text
+  checkpoint_required Boolean @default(false)
+  step_type       String   @default("agent_task")
+  skill_code      String?
+
+  template        squad_templates @relation(fields: [template_id], references: [id], onDelete: Cascade)
+
+  @@unique([template_id, order])
+  @@map("squad_template_steps")
+}
+
+model architect_suggestions {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_by      String?  @db.Uuid
+  prompt          String   @db.Text
+  suggestion      Json
+  created_at      DateTime @default(now())
+
+  organization    organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id, created_at])
+  @@map("architect_suggestions")
+}
+
+model browser_sessions {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  organization_id String   @db.Uuid
+  platform        String
+  cookies         Json?
+  storage_state   Json?
+  updated_at      DateTime @default(now())
+
+  organization    organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, platform])
+  @@map("browser_sessions")
 }

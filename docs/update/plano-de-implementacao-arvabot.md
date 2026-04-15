@@ -611,7 +611,7 @@ OBJETIVO ALGORITMICO:
 Implementar as entidades da seção 2.
 
 INPUT:
-- `docs/implementation-plan-opensquad-incorporacao.md`
+- `docs/plano-de-implementacao-arvabot.md`
 - `prisma/schema.prisma`
 - `migrations/schema_now.sql`
 

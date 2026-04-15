@@ -58,7 +58,7 @@ async function main() {
         organization_id: facebrasil.id,
         ...agent,
         skills: [],
-        metadata: JSON.stringify({ model: 'openrouter/qwen/qwen3.5-plus-02-15' }),
+        metadata: { model: 'openrouter/qwen/qwen3.5-plus-02-15' },
       }
     })
 
@@ -75,7 +75,105 @@ async function main() {
     })
   }
 
-  console.log(`Seeded: Org Facebrasil + Sergio + ${agents.length} agents`)
+  const skills = [
+    {
+      code: 'oracle-analysis',
+      name: 'Oracle Analysis',
+      description: 'Usa o ORACLE do OpenClaw para analise estrategica e ranking.',
+      type: 'internal-api',
+      provider: 'openclaw',
+      plan_gate: 'starter',
+      config_schema: { type: 'object', properties: { mode: { type: 'string' } } },
+    },
+    {
+      code: 'canva-generate',
+      name: 'Canva Generate',
+      description: 'Gera materiais visuais com integracao Canva.',
+      type: 'mcp',
+      provider: 'canva',
+      plan_gate: 'professional',
+      config_schema: { type: 'object', properties: { designType: { type: 'string' } } },
+    },
+    {
+      code: 'browser-investigation',
+      name: 'Browser Investigation',
+      description: 'Investiga URLs com navegador headless e extrai padroes.',
+      type: 'script',
+      provider: 'playwright',
+      plan_gate: 'professional',
+      config_schema: { type: 'object', properties: { targetUrl: { type: 'string' } } },
+    },
+  ]
+
+  for (const skill of skills) {
+    await prisma.skill_definitions.upsert({
+      where: { code: skill.code },
+      update: skill,
+      create: skill,
+    })
+  }
+
+  const templates = [
+    {
+      key: 'youtube-to-linkedin',
+      name: 'YouTube para LinkedIn',
+      description: 'Transforma um video longo em sequencia de conteudo para LinkedIn.',
+      category: 'content-refactor',
+      steps: [
+        { order: 1, agent_id: 'david', title: 'Diagnostico', instructions: 'Analise o material original e levante os melhores ganchos.', checkpoint_required: true },
+        { order: 2, agent_id: 'chiara', title: 'Adaptacao', instructions: 'Reescreva o conteudo no formato ideal para LinkedIn.', skill_code: 'oracle-analysis' },
+        { order: 3, agent_id: 'leon', title: 'Revisao', instructions: 'Revise fluidez, clareza e CTA.', checkpoint_required: true },
+      ],
+    },
+    {
+      key: 'site-style-investigation',
+      name: 'Investigacao de Estilo de Site',
+      description: 'Analisa referencias publicas do cliente e gera briefing interno.',
+      category: 'investigation',
+      steps: [
+        { order: 1, agent_id: 'david', title: 'Investigacao', instructions: 'Use browser headless para investigar o site ou perfil indicado.', checkpoint_required: true, skill_code: 'browser-investigation' },
+        { order: 2, agent_id: 'chiara', title: 'Sintese', instructions: 'Transforme a investigacao em briefing claro com padroes e recomendacoes.', skill_code: 'oracle-analysis' },
+      ],
+    },
+  ]
+
+  for (const template of templates) {
+    const createdTemplate = await prisma.squad_templates.upsert({
+      where: { key: template.key },
+      update: {
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        active: true,
+      },
+      create: {
+        key: template.key,
+        name: template.name,
+        description: template.description,
+        category: template.category,
+        active: true,
+      },
+    })
+
+    for (const step of template.steps) {
+      await prisma.squad_template_steps.upsert({
+        where: {
+          template_id_order: {
+            template_id: createdTemplate.id,
+            order: step.order,
+          },
+        },
+        update: step,
+        create: {
+          template_id: createdTemplate.id,
+          organization_id: facebrasil.id,
+          ...step,
+        },
+      })
+    }
+  }
+
+  console.log(`Seeded: Org Facebrasil + Sergio + ${agents.length} agents + ${skills.length} skills + ${templates.length} templates`)
 }
 
 main()
