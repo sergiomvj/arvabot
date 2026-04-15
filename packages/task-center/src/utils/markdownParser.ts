@@ -13,7 +13,7 @@ export function parseTaskListMarkdown(markdown: string): ParsedTask[] {
 
   for (const line of lines) {
     const trimmed = line.trim();
-    
+
     if (trimmed.startsWith("#")) {
       currentPhase = trimmed.replace(/^#+\s/, "");
       continue;
@@ -25,9 +25,9 @@ export function parseTaskListMarkdown(markdown: string): ParsedTask[] {
       let title = isTaskItem[2];
 
       let assignedAgentCode = undefined;
-      const agentMatch = title.match(/@([A-Z0-9-]+)/);
+      const agentMatch = title.match(/@([A-Z0-9-]+)/i);
       if (agentMatch) {
-        assignedAgentCode = agentMatch[1];
+        assignedAgentCode = agentMatch[1].toLowerCase();
         title = title.replace(agentMatch[0], "").trim();
       }
 
@@ -43,25 +43,32 @@ export function parseTaskListMarkdown(markdown: string): ParsedTask[] {
   return tasks;
 }
 
-export async function injectTasksIntoProject(prisma: any, projectId: string, markdown: string) {
+export async function injectTasksIntoProject(prisma: any, projectId: string, markdown: string, organizationId?: string) {
   const parsedTasks = parseTaskListMarkdown(markdown);
   if (parsedTasks.length === 0) return { count: 0 };
 
-  const activeAgents = await prisma.agent.findMany({ select: { id: true, code: true } });
-  const getAgentId = (code?: string) => activeAgents.find((a: any) => a.code === code)?.id;
+  const activeAgents = organizationId
+    ? await prisma.agents_cache.findMany({
+        where: { organization_id: organizationId, active: true },
+        select: { id: true, openclaw_id: true },
+      })
+    : [];
+
+  const getAgentId = (code?: string) =>
+    activeAgents.find((agent: any) => agent.openclaw_id.toLowerCase() === code?.toLowerCase())?.id ?? null;
 
   let injectedCount = 0;
 
-  for (const t of parsedTasks) {
-    await prisma.projectTask.create({
+  for (const task of parsedTasks) {
+    await prisma.project_task.create({
       data: {
-        projectId,
-        title: `[${t.phase}] ${t.title}`,
-        status: t.isCompleted ? "completed" : "backlog",
-        assignedAgentId: getAgentId(t.assignedAgentCode) || null,
+        project_id: projectId,
+        title: `[${task.phase}] ${task.title}`,
+        status: task.isCompleted ? "completed" : "backlog",
+        assigned_agent_id: getAgentId(task.assignedAgentCode),
         criticality: "medium",
         complexity: "standard",
-      }
+      },
     });
     injectedCount++;
   }

@@ -1,12 +1,12 @@
-export type TaskStatus = 
-  | 'backlog' 
-  | 'assigned' 
-  | 'in_progress' 
-  | 'blocked' 
-  | 'completed';
+export type TaskStatus =
+  | "backlog"
+  | "assigned"
+  | "in_progress"
+  | "blocked"
+  | "completed";
 
-export type TaskCriticality = 'low' | 'medium' | 'high' | 'critical';
-export type TaskComplexity = 'simple' | 'standard' | 'complex' | 'exceptional';
+export type TaskCriticality = "low" | "medium" | "high" | "critical";
+export type TaskComplexity = "simple" | "standard" | "complex" | "exceptional";
 
 export interface Project {
   id: string;
@@ -14,8 +14,7 @@ export interface Project {
   name: string;
   description?: string | null;
   documentation?: string | null;
-  status: 'draft' | 'active' | 'finished' | 'archived';
-  createdByUserId?: string | null;
+  status: "draft" | "active" | "finished" | "archived";
   createdAt: Date;
   updatedAt: Date;
   tasks?: ProjectTask[];
@@ -31,28 +30,17 @@ export interface ProjectTask {
   criticality: TaskCriticality;
   complexity: TaskComplexity;
   assignedAgentId?: string | null;
-  assignedTeamId?: string | null;
-  dependencyId?: string | null;
   sequence: number;
   createdAt: Date;
   updatedAt: Date;
   assignedAgent?: Agent | null;
-  assignedTeam?: Team | null;
+  assignedTeam?: null;
 }
 
 export interface Agent {
   id: string;
   code: string;
   displayName: string;
-  description?: string | null;
-  primaryFunctionId?: string | null;
-  owningTeamId?: string | null;
-}
-
-export interface Team {
-  id: string;
-  code: string;
-  name: string;
   description?: string | null;
 }
 

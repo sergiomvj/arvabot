@@ -7,42 +7,58 @@ import { buildArchitectSuggestion } from '@/lib/squad-presets'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  const context = await getCurrentOrganizationContext()
-  if (!context) return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
-  if (!requireRole(context.role, ['owner', 'admin', 'member'])) {
-    return NextResponse.json({ error: 'Sem permissao para usar o arquiteto' }, { status: 403 })
-  }
+  try {
+    const context = await getCurrentOrganizationContext()
+    if (!context) {
+      return NextResponse.json({ error: 'Nao autorizado' }, { status: 401 })
+    }
 
-  const body = await req.json().catch(() => null)
-  const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : ''
+    if (!requireRole(context.role, ['owner', 'admin', 'member'])) {
+      return NextResponse.json({ error: 'Sem permissao para usar o arquiteto' }, { status: 403 })
+    }
 
-  if (!prompt) {
-    return NextResponse.json({ error: 'Prompt obrigatorio' }, { status: 422 })
-  }
+    const body = await req.json().catch(() => null)
+    const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : ''
 
-  const availableAgents = await prisma.agents_cache.findMany({
-    where: { organization_id: context.orgId, active: true },
-    select: { openclaw_id: true, name: true, role: true },
-    orderBy: { name: 'asc' },
-  })
+    if (!prompt) {
+      return NextResponse.json({ error: 'Prompt obrigatorio' }, { status: 422 })
+    }
 
-  const suggestion = buildArchitectSuggestion(
-    prompt,
-    availableAgents.map((agent) => agent.openclaw_id),
-  )
+    const availableAgents = await prisma.agents_cache.findMany({
+      where: { organization_id: context.orgId, active: true },
+      select: { openclaw_id: true, name: true, role: true },
+      orderBy: { name: 'asc' },
+    })
 
-  await prisma.architect_suggestions.create({
-    data: {
-      organization_id: context.orgId,
-      created_by: context.userId,
+    const suggestion = buildArchitectSuggestion(
       prompt,
-      suggestion,
-    },
-  })
+      availableAgents.map((agent) => agent.openclaw_id),
+    )
 
-  return NextResponse.json({
-    prompt,
-    availableAgents,
-    suggestion,
-  })
+    let persistenceWarning: string | null = null
+
+    try {
+      await prisma.architect_suggestions.create({
+        data: {
+          organization_id: context.orgId,
+          created_by: context.userId,
+          prompt,
+          suggestion,
+        },
+      })
+    } catch (error) {
+      persistenceWarning = 'Nao foi possivel salvar o historico do arquiteto, mas a sugestao foi gerada.'
+      console.error('[API Architect] Falha ao persistir sugestao:', error)
+    }
+
+    return NextResponse.json({
+      prompt,
+      availableAgents,
+      suggestion,
+      warning: persistenceWarning,
+    })
+  } catch (error) {
+    console.error('[API Architect] Erro ao gerar sugestao:', error)
+    return NextResponse.json({ error: 'Erro interno ao gerar sugestao do arquiteto' }, { status: 500 })
+  }
 }
