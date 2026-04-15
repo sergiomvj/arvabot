@@ -33,14 +33,12 @@ export default async function RunsPage() {
   })
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
+    <div className="mx-auto max-w-7xl space-y-8 p-8">
       <div>
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+        <h1 className="flex items-center gap-3 text-2xl font-bold text-white">
           <ActivitySquare className="text-emerald-500" /> Runs
         </h1>
-        <p className="text-sm text-[#4a5580] mt-1">
-          Acompanhe o histórico operacional dos squads e os handoffs registrados.
-        </p>
+        <p className="mt-1 text-sm text-[#4a5580]">Acompanhe o historico operacional dos squads e os handoffs registrados.</p>
       </div>
 
       <RunsBoard runs={runs} />

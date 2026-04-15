@@ -49,18 +49,18 @@ export function RunsBoard({ runs }: { runs: RunBoardItem[] }) {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-sm font-semibold text-white">{run.squad.name}</div>
-                <div className="text-[10px] uppercase tracking-wider text-[#4a5580] mt-1">
+                <div className="mt-1 text-[10px] uppercase tracking-wider text-[#4a5580]">
                   run {run.id.slice(0, 8)} • step {run.current_step ?? '-'}
                 </div>
               </div>
-              <div className={`px-2 py-1 rounded-full border text-[10px] uppercase tracking-wider ${statusClass(run.status)}`}>
+              <div className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-wider ${statusClass(run.status)}`}>
                 {run.status}
               </div>
             </div>
 
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="rounded-xl border border-white/8 bg-[#07090F] px-4 py-3">
-                <div className="text-[10px] uppercase tracking-wider text-[#4a5580]">Início</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#4a5580]">Inicio</div>
                 <div className="mt-1 text-sm text-white">{new Date(run.started_at).toLocaleString('pt-BR')}</div>
               </div>
               <div className="rounded-xl border border-white/8 bg-[#07090F] px-4 py-3">

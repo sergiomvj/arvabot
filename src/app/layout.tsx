@@ -1,11 +1,12 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { ActivitySquare, LayoutDashboard, Layers3, Puzzle, Settings, Users } from 'lucide-react'
+import { ActivitySquare, LayoutDashboard, Layers3, Puzzle, Settings, Users, ListTodo, Trophy } from 'lucide-react'
 
 import './globals.css'
 import { OrgSwitcher } from '@/components/org-switcher'
 import { getViewerContext } from '@/lib/viewer-context'
+import { AgentHubProvider } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,7 +25,8 @@ export default async function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <div className="shell min-h-screen bg-[#07090F] flex">
+        <AgentHubProvider>
+          <div className="shell min-h-screen bg-[#07090F] flex">
           {viewer?.currentOrg && (
             <aside className="sidebar w-[190px] flex-shrink-0 bg-[#0C0F1A] border-r border-white/7 flex flex-col overflow-hidden">
               <div className="sidebar-brand p-4 border-b border-white/7 flex items-center gap-2.5">
@@ -44,6 +46,12 @@ export default async function RootLayout({
                 </Link>
                 <Link href="/dashboard/squads" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
                   <Layers3 size={16} /> Squads
+                </Link>
+                <Link href="/dashboard/task-center" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
+                  <ListTodo size={16} /> Task Center
+                </Link>
+                <Link href="/dashboard/rankings" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
+                  <Trophy size={16} /> Rankings
                 </Link>
                 <Link href="/dashboard/runs" className="nav-item flex items-center gap-2.25 p-2 rounded-md text-[#8892b0] text-xs font-medium hover:bg-[#111528] hover:text-white cursor-pointer">
                   <ActivitySquare size={16} /> Runs
@@ -82,6 +90,7 @@ export default async function RootLayout({
 
           <main className="flex-1 flex flex-col overflow-y-auto bg-[#07090F] scroll-smooth">{children}</main>
         </div>
+        </AgentHubProvider>
       </body>
     </html>
   )

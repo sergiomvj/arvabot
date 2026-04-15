@@ -25,7 +25,9 @@
     "paths": {
       "@/*": [
         "./src/*"
-      ]
+      ],
+      "@agent-hub/task-center/*": ["./packages/task-center/src/*"],
+      "@agent-hub/rankings/*": ["./packages/rankings/src/*"]
     }
   },
   "include": [
