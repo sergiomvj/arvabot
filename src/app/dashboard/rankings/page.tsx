@@ -1,8 +1,12 @@
-import { getPeriodRankings } from "@agent-hub/rankings/actions";
+import { getPeriodRankings, setPrismaClient } from "@agent-hub/rankings/actions";
 import { RankingTable } from "@agent-hub/rankings/components";
 import { Trophy, Medal, Target } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 export default async function RankingsPage() {
+  // Inicialização obrigatória no servidor para SSR
+  await setPrismaClient(prisma);
+
   // Por enquanto fixamos no período atual conforme o plano de implementação
   const periodCode = "monthly-2026-04";
   const { period, rankings } = await getPeriodRankings(periodCode);

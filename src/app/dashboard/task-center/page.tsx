@@ -1,8 +1,12 @@
-import { getAllProjectsWithTasks, createProjectAction, deleteProjectAction } from "@agent-hub/task-center/actions";
+import { getAllProjectsWithTasks, createProjectAction, deleteProjectAction, setPrismaClient } from "@agent-hub/task-center/actions";
 import { ProjectCard, CreateProjectForm } from "@agent-hub/task-center/components";
 import type { CreateProjectInput } from "@agent-hub/task-center/types";
+import { prisma } from "@/lib/prisma";
 
 export default async function TaskCenterPage() {
+  // Inicialização obrigatória no servidor para SSR
+  await setPrismaClient(prisma);
+  
   const projects = await getAllProjectsWithTasks();
 
   const handleCreate = async (data: CreateProjectInput) => {

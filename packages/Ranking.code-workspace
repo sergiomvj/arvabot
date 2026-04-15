@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../../Ranking"
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"prisma.pinToPrisma6": false
+	}
+}
