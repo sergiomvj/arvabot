@@ -36,7 +36,7 @@ export async function getAllProjectsWithTasks(organizationId?: string): Promise<
     .map((task: any) => task.assigned_agent_id)
     .filter((value: string | null | undefined): value is string => Boolean(value));
 
-  const uniqueAgentIds = [...new Set(agentIds)];
+  const uniqueAgentIds = Array.from(new Set(agentIds));
   const assignedAgents =
     uniqueAgentIds.length > 0
       ? await prisma.agents_cache.findMany({

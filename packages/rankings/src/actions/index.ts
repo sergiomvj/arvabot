@@ -1,8 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { serializePrisma } from "../utils/serialization";
-import type { RankingsResponse, AgentProfile } from "../types";
+import type { AgentProfile, RankingsResponse } from "../types";
 
 let prismaInstance: any = null;
 
@@ -17,23 +16,47 @@ export async function setPrismaClient(client: any) {
   prismaInstance = client;
 }
 
+function normalizeAgent(agent: any) {
+  if (!agent) return null;
+  return {
+    id: agent.id,
+    code: agent.openclaw_id,
+    displayName: agent.name,
+    description: agent.role ?? null,
+    owningTeamId: agent.owningTeamId ?? null,
+    primaryFunctionId: agent.primaryFunctionId ?? null,
+  };
+}
+
+function normalizeRequiredAgent(agent: any) {
+  return {
+    id: agent.id,
+    code: agent.openclaw_id,
+    displayName: agent.name,
+    description: agent.role ?? null,
+    owningTeamId: agent.owningTeamId ?? null,
+    primaryFunctionId: agent.primaryFunctionId ?? null,
+  };
+}
+
 export async function getPeriodRankings(periodCode: string): Promise<RankingsResponse> {
   try {
     const prisma = getPrisma();
-    const period = await prisma.evaluationPeriod.findUnique({ where: { code: periodCode } });
+    const period = await prisma.evaluation_period.findUnique({ where: { code: periodCode } });
     if (!period) return { period: null, rankings: [] };
 
-    const scorecardsRaw = await prisma.periodScorecard.findMany({
+    const scorecardsRaw = await prisma.period_scorecard.findMany({
       where: { periodId: period.id },
       orderBy: { rankPosition: "asc" },
-      include: { agent: true }
+      include: { agent: true },
     });
 
-    const rankings = scorecardsRaw.map((sc: any) => ({
-      ...sc,
-      scoreValue: sc.scoreValue.toNumber(),
-      confidenceIndex: sc.confidenceIndex.toNumber(),
-      trendDelta: sc.trendDelta?.toNumber() || null
+    const rankings = scorecardsRaw.map((scorecard: any) => ({
+      ...scorecard,
+      scoreValue: scorecard.scoreValue.toNumber(),
+      confidenceIndex: scorecard.confidenceIndex.toNumber(),
+      trendDelta: scorecard.trendDelta?.toNumber() || null,
+      agent: normalizeAgent(scorecard.agent),
     }));
 
     return serializePrisma({ period, rankings });
@@ -46,63 +69,72 @@ export async function getPeriodRankings(periodCode: string): Promise<RankingsRes
 export async function getAgentProfile(agentCode: string, periodCode?: string): Promise<AgentProfile | null> {
   try {
     const prisma = getPrisma();
-    const agent = await prisma.agent.findUnique({
-      where: { code: agentCode }
+    const agent = await prisma.agents_cache.findFirst({
+      where: { openclaw_id: agentCode },
     });
 
     if (!agent) return null;
 
-    let teamDesc = "Sem Squad";
-    if (agent.owningTeamId) {
-       const t = await prisma.team.findUnique({ where: { id: agent.owningTeamId } });
-       if (t) teamDesc = t.name;
-    }
     let funcDesc = "Generic";
     if (agent.primaryFunctionId) {
-       const f = await prisma.functionCatalog.findUnique({ where: { id: agent.primaryFunctionId } });
-       if (f) funcDesc = f.name;
+      const func = await prisma.function_catalog.findUnique({ where: { id: agent.primaryFunctionId } });
+      if (func) funcDesc = func.name;
     }
 
-    const badgesAwarded = await prisma.badgeAward.findMany({
-        where: { agentId: agent.id },
-        include: { badge: true }
+    const badgesAwarded = await prisma.badge_award.findMany({
+      where: { agentId: agent.id },
+      include: { badge: true },
     });
-    
-    const consequenceEvents = await prisma.consequenceEvent.findMany({
-        where: { agentId: agent.id },
-        include: { rule: true },
-        orderBy: { triggeredAt: "desc" },
-        take: 5
+
+    const consequenceEvents = await prisma.consequence_event.findMany({
+      where: { agentId: agent.id },
+      include: { rule: true },
+      orderBy: { triggeredAt: "desc" },
+      take: 5,
     });
 
     let scorecardRaw = null;
     if (periodCode) {
-      const p = await prisma.evaluationPeriod.findUnique({ where: { code: periodCode } });
-      if (p) {
-        scorecardRaw = await prisma.periodScorecard.findFirst({
-          where: { agentId: agent.id, periodId: p.id }
+      const period = await prisma.evaluation_period.findUnique({ where: { code: periodCode } });
+      if (period) {
+        scorecardRaw = await prisma.period_scorecard.findFirst({
+          where: { agentId: agent.id, periodId: period.id },
         });
       }
     } else {
-      scorecardRaw = await prisma.periodScorecard.findFirst({
-        where: { agentId: agent.id }
+      scorecardRaw = await prisma.period_scorecard.findFirst({
+        where: { agentId: agent.id },
       });
     }
 
-    const scorecard = scorecardRaw ? {
-      ...scorecardRaw,
-      scoreValue: scorecardRaw.scoreValue.toNumber(),
-      confidenceIndex: scorecardRaw.confidenceIndex.toNumber(),
-      trendDelta: scorecardRaw.trendDelta?.toNumber() || null
-    } : null;
+    const scorecard = scorecardRaw
+      ? {
+          ...scorecardRaw,
+          scoreValue: scorecardRaw.scoreValue.toNumber(),
+          confidenceIndex: scorecardRaw.confidenceIndex.toNumber(),
+          trendDelta: scorecardRaw.trendDelta?.toNumber() || null,
+        }
+      : null;
 
-    const recentExecutions = await prisma.taskExecution.findMany({
+    const recentExecutions = await prisma.task_execution.findMany({
       where: { agentId: agent.id },
       orderBy: { startedAt: "desc" },
-      take: 15
+      take: 15,
+      include: { task_type: true },
     });
 
-    return serializePrisma({ agent, teamDesc, funcDesc, badgesAwarded, consequenceEvents, scorecard, recentExecutions });
+    return serializePrisma({
+      agent: normalizeRequiredAgent(agent),
+      teamDesc: "Sem Squad",
+      funcDesc,
+      badgesAwarded,
+      consequenceEvents,
+      scorecard,
+      recentExecutions: recentExecutions.map((execution: any) => ({
+        ...execution,
+        taskType: execution.task_type,
+      })),
+    });
   } catch (error) {
     console.error("Database connection failed in getAgentProfile:", error);
     return null;
